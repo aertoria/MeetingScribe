@@ -51,6 +51,8 @@ class MeetingTranscription {
         this.generateNotesBtn = document.getElementById('generateNotesBtn');
         this.downloadNotesBtn = document.getElementById('downloadNotesBtn');
         this.newMeetingBtn = document.getElementById('newMeetingBtn');
+        this.copyNotesBtn = document.getElementById('copyNotesBtn');
+        this.exportNotesBtn = document.getElementById('exportNotesBtn');
         
         // Sidebar elements
         this.meetingsList = document.getElementById('meetingsList');
@@ -119,6 +121,14 @@ class MeetingTranscription {
         this.downloadNotesBtn.addEventListener('click', () => this.downloadNotes());
         this.newMeetingBtn.addEventListener('click', () => this.newMeeting());
         this.refreshMeetingsBtn.addEventListener('click', () => this.loadMeetings());
+        
+        // New action buttons
+        if (this.copyNotesBtn) {
+            this.copyNotesBtn.addEventListener('click', () => this.copyNotesToClipboard());
+        }
+        if (this.exportNotesBtn) {
+            this.exportNotesBtn.addEventListener('click', () => this.exportNotesAsPDF());
+        }
         
 
         
@@ -361,9 +371,6 @@ class MeetingTranscription {
             this.currentMeetingId = data.meeting_id;
             this.displayNotes(this.currentNotes);
             
-            // Enable download button
-            this.downloadNotesBtn.disabled = false;
-            
             // Refresh meetings list to show the new meeting
             this.loadMeetings();
             
@@ -377,11 +384,214 @@ class MeetingTranscription {
     }
     
     displayNotes(notes) {
-        this.meetingNotes.textContent = notes;
+        this.meetingNotes.innerHTML = this.formatNotesForDisplay(notes);
         this.notesSection.style.display = 'block';
+        
+        // Extract and display action items summary
+        this.displayActionItemsSummary(notes);
+        
+        // Enable action buttons
+        this.downloadNotesBtn.disabled = false;
+        if (this.copyNotesBtn) this.copyNotesBtn.disabled = false;
+        if (this.exportNotesBtn) this.exportNotesBtn.disabled = false;
         
         // Scroll to notes section
         this.notesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    formatNotesForDisplay(notes) {
+        // Convert markdown-style notes to HTML with proper formatting
+        let formatted = notes
+            // Handle headers with emojis
+            .replace(/## 🔥 (.*)/g, '<h2 class="priority-header">🔥 $1</h2>')
+            .replace(/## 📋 (.*)/g, '<h2 class="action-header">📋 $1</h2>')
+            .replace(/## 💬 (.*)/g, '<h2 class="discussion-header">💬 $1</h2>')
+            .replace(/## ✅ (.*)/g, '<h2 class="decision-header">✅ $1</h2>')
+            .replace(/## ⏭️ (.*)/g, '<h2 class="next-steps-header">⏭️ $1</h2>')
+            .replace(/## 👥 (.*)/g, '<h2 class="participants-header">👥 $1</h2>')
+            .replace(/## (.*)/g, '<h2>$1</h2>')
+            
+            // Handle numbered lists
+            .split('\n').map(line => {
+                if (/^\d+\.\s/.test(line)) {
+                    return `<div class="numbered-item">${line}</div>`;
+                } else if (/^•\s/.test(line)) {
+                    return `<div class="bullet-item">${line.replace('• ', '')}</div>`;
+                } else if (line.trim() === '') {
+                    return '<div class="spacing"></div>';
+                } else if (!line.startsWith('<h2')) {
+                    return `<div class="content-line">${line}</div>`;
+                }
+                return line;
+            }).join('')
+            
+            // Clean up spacing
+            .replace(/<div class="spacing"><\/div><div class="spacing"><\/div>/g, '<div class="spacing"></div>');
+            
+        return formatted;
+    }
+    
+    displayActionItemsSummary(notes) {
+        const actionItemsSummary = document.getElementById('actionItemsSummary');
+        const actionItemsList = document.getElementById('actionItemsList');
+        
+        if (!actionItemsSummary || !actionItemsList) return;
+        
+        // Extract priority actions and all action items from notes
+        const priorityMatches = notes.match(/## 🔥 Priority Action Items\n([\s\S]*?)(?=\n##|$)/);
+        const allActionsMatches = notes.match(/## 📋 Complete Action Items\n([\s\S]*?)(?=\n##|$)/);
+        
+        if (priorityMatches || allActionsMatches) {
+            let html = '';
+            
+            // Add priority items
+            if (priorityMatches) {
+                const priorityItems = priorityMatches[1].trim().split('\n').filter(line => line.trim());
+                priorityItems.forEach((item, index) => {
+                    const cleanItem = item.replace(/^\d+\.\s*/, '');
+                    html += `
+                        <div class="action-item priority">
+                            <span class="action-item-number">${index + 1}.</span>
+                            ${cleanItem}
+                        </div>
+                    `;
+                });
+            }
+            
+            // Add regular items (if any)
+            if (allActionsMatches && !priorityMatches) {
+                const allItems = allActionsMatches[1].trim().split('\n').filter(line => line.trim());
+                allItems.slice(0, 5).forEach((item, index) => { // Show top 5
+                    const cleanItem = item.replace(/^\d+\.\s*/, '');
+                    html += `
+                        <div class="action-item">
+                            <span class="action-item-number">${index + 1}.</span>
+                            ${cleanItem}
+                        </div>
+                    `;
+                });
+            }
+            
+            if (html) {
+                actionItemsList.innerHTML = html;
+                actionItemsSummary.style.display = 'block';
+            }
+        }
+    }
+    
+    async copyNotesToClipboard() {
+        if (!this.currentNotes) {
+            this.showError('No notes available to copy.');
+            return;
+        }
+        
+        try {
+            await navigator.clipboard.writeText(this.currentNotes);
+            
+            // Show success feedback
+            const originalIcon = this.copyNotesBtn.innerHTML;
+            this.copyNotesBtn.innerHTML = '<i data-feather="check" class="icon-sm"></i>';
+            this.copyNotesBtn.classList.add('btn-success');
+            this.copyNotesBtn.classList.remove('btn-outline-secondary');
+            
+            setTimeout(() => {
+                this.copyNotesBtn.innerHTML = originalIcon;
+                this.copyNotesBtn.classList.remove('btn-success');
+                this.copyNotesBtn.classList.add('btn-outline-secondary');
+                feather.replace();
+            }, 2000);
+            
+            feather.replace();
+        } catch (error) {
+            this.showError('Failed to copy notes to clipboard.');
+            console.error('Copy error:', error);
+        }
+    }
+    
+    exportNotesAsPDF() {
+        if (!this.currentNotes) {
+            this.showError('No notes available to export.');
+            return;
+        }
+        
+        // Create a printable version
+        const printWindow = window.open('', '_blank');
+        const now = new Date();
+        const timestamp = now.toLocaleString();
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Meeting Notes - ${timestamp}</title>
+                <style>
+                    body {
+                        font-family: 'Google Sans', Arial, sans-serif;
+                        line-height: 1.6;
+                        max-width: 800px;
+                        margin: 40px auto;
+                        padding: 20px;
+                        color: #333;
+                    }
+                    h1 {
+                        color: #1a73e8;
+                        border-bottom: 3px solid #1a73e8;
+                        padding-bottom: 10px;
+                    }
+                    h2 {
+                        color: #34a853;
+                        margin-top: 30px;
+                        margin-bottom: 15px;
+                        font-size: 18px;
+                    }
+                    ul, ol {
+                        margin-bottom: 20px;
+                    }
+                    li {
+                        margin-bottom: 8px;
+                    }
+                    .priority-section {
+                        background: #fef7f7;
+                        border-left: 4px solid #ea4335;
+                        padding: 15px;
+                        margin: 20px 0;
+                    }
+                    .header-info {
+                        color: #666;
+                        font-size: 14px;
+                        margin-bottom: 30px;
+                        border-bottom: 1px solid #eee;
+                        padding-bottom: 15px;
+                    }
+                    @media print {
+                        body { margin: 0; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-info">
+                    <strong>Meeting Notes</strong><br>
+                    Generated: ${timestamp}<br>
+                    Source: Meeting Transcription App
+                </div>
+                <div class="notes-content">
+                    ${this.formatNotesForDisplay(this.currentNotes)}
+                </div>
+                <div class="no-print" style="margin-top: 40px; text-align: center;">
+                    <button onclick="window.print()" style="background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Print / Save as PDF</button>
+                    <button onclick="window.close()" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        
+        // Auto-focus the print window
+        setTimeout(() => {
+            printWindow.focus();
+        }, 500);
     }
     
     downloadNotes() {

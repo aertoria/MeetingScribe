@@ -1,6 +1,6 @@
 # Overview
 
-This is a meeting transcription web application that converts speech to text in real-time and generates professional meeting notes using AI. The application allows users to record meetings through their browser's speech recognition capabilities, view live transcripts, and automatically generate structured meeting notes including summaries, action items, decisions, and key points using OpenAI's GPT-4o model.
+This is a professional meeting transcription web application that converts speech to text in real-time and generates comprehensive meeting notes with enhanced action items extraction using AI. The application features speaker detection with color-coded labels, an integrated Gemini AI chatbot for real-time meeting assistance, and advanced action items identification with priority ranking. Users can record meetings through their browser's speech recognition, view live multi-speaker transcripts, automatically generate structured meeting notes with priority action items, and export them in multiple formats.
 
 # User Preferences
 
@@ -24,10 +24,23 @@ Design theme preference: Google Workspace theme with clean, modern interface and
 - **Design System**: Google's color scheme (blue #1a73e8, green #34a853, red #ea4335, gray scale), rounded corners, subtle shadows, and clean typography
 
 ## API Structure
-- **POST /generate_notes**: Accepts transcript text and returns AI-generated structured meeting notes
-- **GET /**: Serves the main transcription interface with sidebar
+- **POST /generate_notes**: Accepts transcript text and returns AI-generated structured meeting notes with enhanced action items extraction
+- **POST /chat**: Handles Gemini AI chat requests with meeting context for real-time assistance
+- **GET /**: Serves the main transcription interface with three-column layout (sidebar, main content, AI chat)
 - **GET /meetings**: Returns list of all saved meetings with previews
 - **GET /meetings/<id>**: Returns specific meeting data including transcript and notes
+
+## Enhanced Features
+### Action Items Extraction
+- **Priority Action Items**: Top 3 most important tasks requiring immediate attention
+- **Complete Action Items**: Comprehensive list with responsibility assignments and deadlines
+- **Smart Detection**: AI identifies action phrases like "We need to...", "Follow up on...", "By next week..."
+- **Meeting Classification**: Automatically categorizes meeting type (Planning, Status Update, Decision Making, etc.)
+
+### Export & Sharing
+- **Copy to Clipboard**: One-click copying of complete meeting notes
+- **PDF Export**: Professional PDF generation with Google Workspace styling
+- **Visual Summary**: Color-coded action items summary with priority highlighting
 
 ## Data Flow
 1. Browser captures audio via Web Speech API

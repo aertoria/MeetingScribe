@@ -838,3 +838,183 @@ body {
     margin-top: 4px;
     text-align: center;
 }
+
+/* Enhanced Notes Styling */
+.notes-content h2 {
+    color: var(--google-gray-800);
+    font-size: 18px;
+    font-weight: 500;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid var(--google-blue);
+    padding-bottom: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.notes-content h2:first-child {
+    margin-top: 0;
+}
+
+/* Priority Action Items Styling */
+.notes-content h2:contains("Priority Action Items") {
+    color: var(--google-red);
+    border-bottom-color: var(--google-red);
+}
+
+/* Action Items Summary */
+.action-items-summary {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--google-gray-50);
+    border-radius: 8px;
+    border-left: 4px solid var(--google-blue);
+}
+
+.summary-header h6 {
+    color: var(--google-gray-800);
+    font-weight: 500;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.action-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.action-item {
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border-left: 3px solid var(--google-blue);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.action-item.priority {
+    border-left-color: var(--google-red);
+    background: #fef7f7;
+}
+
+.action-item-number {
+    font-weight: 500;
+    color: var(--google-blue);
+    margin-right: 8px;
+}
+
+.action-item.priority .action-item-number {
+    color: var(--google-red);
+}
+
+/* Notes Actions */
+.notes-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.notes-actions button {
+    transition: all 0.2s ease;
+}
+
+.notes-actions button:hover {
+    transform: translateY(-1px);
+}
+
+/* Enhanced Notes Content Styling */
+.notes-content ol {
+    padding-left: 24px;
+    margin-bottom: 16px;
+}
+
+.notes-content ol li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.notes-content ul {
+    padding-left: 20px;
+    margin-bottom: 16px;
+}
+
+.notes-content ul li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+/* Status indicators for different sections */
+.notes-content h2:has-text("Priority") {
+    animation: priorityPulse 2s infinite;
+}
+
+@keyframes priorityPulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+/* Enhanced Notes Display */
+.notes-content .priority-header {
+    color: var(--google-red) !important;
+    border-bottom-color: var(--google-red) !important;
+}
+
+.notes-content .action-header {
+    color: var(--google-blue) !important;
+    border-bottom-color: var(--google-blue) !important;
+}
+
+.notes-content .discussion-header {
+    color: var(--google-green) !important;
+    border-bottom-color: var(--google-green) !important;
+}
+
+.notes-content .decision-header {
+    color: var(--google-green) !important;
+    border-bottom-color: var(--google-green) !important;
+}
+
+.notes-content .next-steps-header {
+    color: var(--google-yellow) !important;
+    border-bottom-color: var(--google-yellow) !important;
+}
+
+.notes-content .participants-header {
+    color: var(--google-gray-700) !important;
+    border-bottom-color: var(--google-gray-400) !important;
+}
+
+.numbered-item {
+    margin: 8px 0;
+    padding: 8px 0;
+    border-left: 3px solid var(--google-blue);
+    padding-left: 12px;
+    background: rgba(26, 115, 232, 0.05);
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.bullet-item {
+    margin: 6px 0;
+    padding: 4px 0 4px 20px;
+    position: relative;
+}
+
+.bullet-item::before {
+    content: "•";
+    color: var(--google-blue);
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+.content-line {
+    margin: 4px 0;
+    line-height: 1.6;
+}
+
+.spacing {
+    height: 16px;
+}

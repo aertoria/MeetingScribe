@@ -137,14 +137,30 @@
                         <div class="row">
                             <div class="col-12">
                                 <div class="card notes-card" id="notesSection" style="display: none;">
-                                    <div class="card-header">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
                                         <h6 class="card-title mb-0">
                                             <i data-feather="clipboard" class="me-2"></i>
-                                            Meeting Notes
+                                            AI-Generated Meeting Notes
                                         </h6>
+                                        <div class="notes-actions">
+                                            <button id="copyNotesBtn" class="btn btn-sm btn-outline-secondary me-2" title="Copy to Clipboard">
+                                                <i data-feather="copy" class="icon-sm"></i>
+                                            </button>
+                                            <button id="exportNotesBtn" class="btn btn-sm btn-outline-primary" title="Export as PDF">
+                                                <i data-feather="file-text" class="icon-sm"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="card-body">
                                         <div id="meetingNotes" class="notes-content"></div>
+                                        
+                                        <!-- Action Items Summary -->
+                                        <div id="actionItemsSummary" class="action-items-summary" style="display: none;">
+                                            <div class="summary-header">
+                                                <h6><i data-feather="check-square" class="me-2"></i>Action Items Summary</h6>
+                                            </div>
+                                            <div id="actionItemsList" class="action-items-list"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
