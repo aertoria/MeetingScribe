@@ -1,0 +1,330 @@
+// Meeting Transcription App - Professional JavaScript
+
+class MeetingTranscription {
+    constructor() {
+        this.recognition = null;
+        this.isRecording = false;
+        this.transcript = '';
+        this.interimTranscript = '';
+        this.currentNotes = '';
+        
+        this.initializeElements();
+        this.initializeSpeechRecognition();
+        this.attachEventListeners();
+    }
+    
+    initializeElements() {
+        // Recording controls
+        this.recordBtn = document.getElementById('recordBtn');
+        this.stopBtn = document.getElementById('stopBtn');
+        this.recordingIndicator = document.getElementById('recordingIndicator');
+        this.recordingStatus = document.getElementById('recordingStatus');
+        this.recordingSubtitle = document.getElementById('recordingSubtitle');
+        
+        // Transcript and notes
+        this.transcriptElement = document.getElementById('transcript');
+        this.notesSection = document.getElementById('notesSection');
+        this.meetingNotes = document.getElementById('meetingNotes');
+        
+        // Action buttons
+        this.generateNotesBtn = document.getElementById('generateNotesBtn');
+        this.downloadNotesBtn = document.getElementById('downloadNotesBtn');
+        this.newMeetingBtn = document.getElementById('newMeetingBtn');
+        
+        // Modals
+        this.loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        this.errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        this.errorMessage = document.getElementById('errorMessage');
+    }
+    
+    initializeSpeechRecognition() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            this.showError('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+            return;
+        }
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = new SpeechRecognition();
+        
+        // Configure speech recognition
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-US';
+        
+        // Event handlers
+        this.recognition.onstart = () => {
+            console.log('Speech recognition started');
+        };
+        
+        this.recognition.onresult = (event) => {
+            this.handleSpeechResult(event);
+        };
+        
+        this.recognition.onerror = (event) => {
+            this.handleSpeechError(event);
+        };
+        
+        this.recognition.onend = () => {
+            console.log('Speech recognition ended');
+            if (this.isRecording) {
+                // Restart recognition if we're still supposed to be recording
+                setTimeout(() => {
+                    if (this.isRecording) {
+                        this.recognition.start();
+                    }
+                }, 100);
+            }
+        };
+    }
+    
+    attachEventListeners() {
+        this.recordBtn.addEventListener('click', () => this.startRecording());
+        this.stopBtn.addEventListener('click', () => this.stopRecording());
+        this.generateNotesBtn.addEventListener('click', () => this.generateNotes());
+        this.downloadNotesBtn.addEventListener('click', () => this.downloadNotes());
+        this.newMeetingBtn.addEventListener('click', () => this.newMeeting());
+    }
+    
+    async startRecording() {
+        try {
+            // Request microphone permission
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            this.isRecording = true;
+            this.transcript = '';
+            this.interimTranscript = '';
+            
+            // Update UI
+            this.updateRecordingUI(true);
+            this.clearTranscript();
+            
+            // Start speech recognition
+            this.recognition.start();
+            
+        } catch (error) {
+            this.showError('Microphone access denied. Please allow microphone access and try again.');
+            console.error('Error starting recording:', error);
+        }
+    }
+    
+    stopRecording() {
+        this.isRecording = false;
+        
+        // Update UI
+        this.updateRecordingUI(false);
+        
+        // Stop speech recognition
+        if (this.recognition) {
+            this.recognition.stop();
+        }
+        
+        // Enable generate notes button if we have transcript
+        if (this.transcript.trim()) {
+            this.generateNotesBtn.disabled = false;
+            this.updateStatus('Processing Complete', 'Ready to generate meeting notes');
+        } else {
+            this.updateStatus('No Speech Detected', 'Please try recording again');
+        }
+    }
+    
+    handleSpeechResult(event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript + ' ';
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+        
+        // Update transcripts
+        this.transcript += finalTranscript;
+        this.interimTranscript = interimTranscript;
+        
+        // Update display
+        this.updateTranscriptDisplay();
+    }
+    
+    handleSpeechError(event) {
+        console.error('Speech recognition error:', event.error);
+        
+        switch (event.error) {
+            case 'no-speech':
+                // This is common and not really an error
+                break;
+            case 'audio-capture':
+                this.showError('No microphone was found. Please check your microphone settings.');
+                this.stopRecording();
+                break;
+            case 'not-allowed':
+                this.showError('Microphone access was denied. Please allow microphone access and try again.');
+                this.stopRecording();
+                break;
+            case 'network':
+                this.showError('Network error occurred during speech recognition.');
+                break;
+            default:
+                console.log('Speech recognition error:', event.error);
+                break;
+        }
+    }
+    
+    updateRecordingUI(recording) {
+        if (recording) {
+            this.recordBtn.style.display = 'none';
+            this.stopBtn.style.display = 'inline-flex';
+            this.recordingIndicator.classList.add('recording');
+            this.updateStatus('Recording...', 'Speak clearly into your microphone', 'status-recording');
+        } else {
+            this.recordBtn.style.display = 'inline-flex';
+            this.stopBtn.style.display = 'none';
+            this.recordingIndicator.classList.remove('recording');
+        }
+    }
+    
+    updateStatus(status, subtitle, className = 'status-ready') {
+        this.recordingStatus.textContent = status;
+        this.recordingSubtitle.textContent = subtitle;
+        this.recordingStatus.className = className;
+    }
+    
+    clearTranscript() {
+        this.transcriptElement.innerHTML = `
+            <div class="empty-state">
+                <i data-feather="mic" class="empty-icon"></i>
+                <p class="text-muted mb-0">Start recording to see live transcript</p>
+            </div>
+        `;
+        feather.replace();
+    }
+    
+    updateTranscriptDisplay() {
+        let html = '';
+        
+        // Add final transcript
+        if (this.transcript.trim()) {
+            const sentences = this.transcript.trim().split(/[.!?]+/).filter(s => s.trim());
+            sentences.forEach(sentence => {
+                if (sentence.trim()) {
+                    html += `<div class="transcript-text">${sentence.trim()}.</div>`;
+                }
+            });
+        }
+        
+        // Add interim transcript
+        if (this.interimTranscript.trim()) {
+            html += `<div class="transcript-text interim">${this.interimTranscript}</div>`;
+        }
+        
+        if (html) {
+            this.transcriptElement.innerHTML = html;
+            // Scroll to bottom
+            this.transcriptElement.scrollTop = this.transcriptElement.scrollHeight;
+        }
+    }
+    
+    async generateNotes() {
+        if (!this.transcript.trim()) {
+            this.showError('No transcript available. Please record some speech first.');
+            return;
+        }
+        
+        try {
+            // Show loading modal
+            this.loadingModal.show();
+            this.generateNotesBtn.disabled = true;
+            
+            const response = await fetch('/generate_notes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    transcript: this.transcript
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate notes');
+            }
+            
+            // Display the notes
+            this.currentNotes = data.notes;
+            this.displayNotes(this.currentNotes);
+            
+            // Enable download button
+            this.downloadNotesBtn.disabled = false;
+            
+        } catch (error) {
+            this.showError(`Failed to generate meeting notes: ${error.message}`);
+            console.error('Error generating notes:', error);
+        } finally {
+            this.loadingModal.hide();
+            this.generateNotesBtn.disabled = false;
+        }
+    }
+    
+    displayNotes(notes) {
+        this.meetingNotes.textContent = notes;
+        this.notesSection.style.display = 'block';
+        
+        // Scroll to notes section
+        this.notesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    downloadNotes() {
+        if (!this.currentNotes) {
+            this.showError('No notes available to download.');
+            return;
+        }
+        
+        const now = new Date();
+        const filename = `Meeting_Notes_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}.txt`;
+        
+        const blob = new Blob([this.currentNotes], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    
+    newMeeting() {
+        // Reset everything
+        this.transcript = '';
+        this.interimTranscript = '';
+        this.currentNotes = '';
+        
+        // Reset UI
+        this.clearTranscript();
+        this.notesSection.style.display = 'none';
+        this.generateNotesBtn.disabled = true;
+        this.downloadNotesBtn.disabled = true;
+        this.updateStatus('Ready to Record', 'Click to start recording');
+        
+        // Stop recording if active
+        if (this.isRecording) {
+            this.stopRecording();
+        }
+    }
+    
+    showError(message) {
+        this.errorMessage.textContent = message;
+        this.errorModal.show();
+    }
+}
+
+// Initialize the application when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new MeetingTranscription();
+});
