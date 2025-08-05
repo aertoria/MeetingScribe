@@ -18,10 +18,11 @@ Design theme preference: Google Workspace theme with clean, modern interface and
 ## Frontend Architecture
 - **Template Engine**: Jinja2 templates with Flask
 - **UI Framework**: Bootstrap 5 for responsive design with Google Workspace theme
-- **Speech Recognition**: Browser Web Speech API (webkitSpeechRecognition/SpeechRecognition)
+- **Speech Recognition**: Browser Web Speech API (webkitSpeechRecognition/SpeechRecognition) with intelligent speaker correlation
 - **JavaScript**: Vanilla ES6+ with class-based architecture for real-time transcription handling
 - **Styling**: Google Workspace theme with Material Design principles, Google Sans fonts, and Google's signature color palette
 - **Design System**: Google's color scheme (blue #1a73e8, green #34a853, red #ea4335, gray scale), rounded corners, subtle shadows, and clean typography
+- **Speaker Detection**: Smart voice correlation using timing patterns (< 1.5s = same speaker, 1.5-3s = context-aware, > 3s = new speaker) with pattern recognition for alternating conversations
 
 ## API Structure
 - **POST /generate_notes**: Accepts transcript text and returns AI-generated structured meeting notes with enhanced action items extraction

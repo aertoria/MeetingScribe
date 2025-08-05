@@ -24,8 +24,12 @@ class MeetingTranscription {
             '#00796b', // Teal
             '#5d4037'  // Brown
         ];
-        this.speakerChangeThreshold = 2000; // 2 seconds pause indicates possible speaker change
+        this.speakerChangeThreshold = 3000; // 3 seconds pause for definite speaker change
+        this.sameSpeakerThreshold = 1500; // Less than 1.5 seconds = likely same speaker
         this.transcriptSegments = [];
+        this.speakerHistory = []; // Track speaker patterns for correlation
+        this.lastActiveSpeaker = null; // Remember last active speaker
+        this.speakerPatterns = new Map(); // Store speech patterns for each speaker
         
         this.initializeElements();
         this.initializeSpeechRecognition();
@@ -191,13 +195,31 @@ class MeetingTranscription {
         let interimTranscript = '';
         let finalTranscript = '';
         
-        // Check for speaker change based on pause duration
+        // Smart speaker detection based on pause duration
         const currentTime = Date.now();
         const timeSinceLastSpeech = currentTime - this.lastSpeechTime;
         
-        if (timeSinceLastSpeech > this.speakerChangeThreshold && this.transcript.trim()) {
-            // Possible speaker change
-            this.currentSpeaker = (this.currentSpeaker % 8) + 1;
+        if (this.transcript.trim()) {
+            if (timeSinceLastSpeech < this.sameSpeakerThreshold) {
+                // Very short pause - definitely same speaker, no change needed
+            } else if (timeSinceLastSpeech < this.speakerChangeThreshold) {
+                // Medium pause - might be same speaker thinking
+                // Keep same speaker if they were recently active
+                if (this.lastActiveSpeaker !== null && this.lastActiveSpeaker === this.currentSpeaker) {
+                    // Keep current speaker
+                } else if (this.lastActiveSpeaker !== null) {
+                    // Return to last active speaker (they're continuing)
+                    this.currentSpeaker = this.lastActiveSpeaker;
+                }
+            } else {
+                // Long pause - likely speaker change
+                // Check if we should cycle to next speaker or return to a previous one
+                const nextSpeaker = this.determineNextSpeaker();
+                if (this.currentSpeaker !== nextSpeaker) {
+                    this.lastActiveSpeaker = this.currentSpeaker; // Remember who was speaking
+                    this.currentSpeaker = nextSpeaker;
+                }
+            }
         }
         
         this.lastSpeechTime = currentTime;
@@ -212,6 +234,14 @@ class MeetingTranscription {
                     speaker: this.currentSpeaker,
                     timestamp: new Date().toLocaleTimeString()
                 });
+                
+                // Update speaker history for pattern detection
+                if (!this.speakerHistory.includes(this.currentSpeaker)) {
+                    this.speakerHistory.push(this.currentSpeaker);
+                }
+                
+                // Store speech pattern for this speaker
+                this.updateSpeakerPattern(this.currentSpeaker, transcript);
                 
                 finalTranscript += transcript + ' ';
             } else {
@@ -300,7 +330,56 @@ class MeetingTranscription {
         `;
         this.transcriptSegments = [];
         this.currentSpeaker = 1;
+        this.lastActiveSpeaker = null;
+        this.speakerHistory = [];
+        this.speakerPatterns.clear();
         feather.replace();
+    }
+    
+    determineNextSpeaker() {
+        // If we have speaker history, try to detect patterns
+        if (this.speakerHistory.length > 0) {
+            // Check if this is a back-and-forth conversation pattern
+            const recentSpeakers = this.speakerHistory.slice(-4);
+            if (recentSpeakers.length >= 2) {
+                // Look for alternating pattern
+                const lastTwo = recentSpeakers.slice(-2);
+                if (lastTwo[0] !== lastTwo[1]) {
+                    // Alternating pattern detected, return to previous speaker
+                    return lastTwo[0];
+                }
+            }
+        }
+        
+        // Track speaker in history
+        if (this.currentSpeaker && !this.speakerHistory.includes(this.currentSpeaker)) {
+            this.speakerHistory.push(this.currentSpeaker);
+        }
+        
+        // If we have 2 or fewer speakers so far, alternate between them
+        if (this.speakerHistory.length === 2) {
+            return this.speakerHistory.find(s => s !== this.currentSpeaker);
+        }
+        
+        // Otherwise assign new speaker number
+        return (this.currentSpeaker % 8) + 1;
+    }
+    
+    updateSpeakerPattern(speakerId, text) {
+        // Store speech patterns for each speaker (word count, average segment length)
+        if (!this.speakerPatterns.has(speakerId)) {
+            this.speakerPatterns.set(speakerId, {
+                totalWords: 0,
+                segments: 0,
+                avgSegmentLength: 0
+            });
+        }
+        
+        const pattern = this.speakerPatterns.get(speakerId);
+        const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+        pattern.totalWords += wordCount;
+        pattern.segments += 1;
+        pattern.avgSegmentLength = pattern.totalWords / pattern.segments;
     }
     
     updateTranscriptDisplay() {
