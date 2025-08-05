@@ -25,14 +25,18 @@ Design theme preference: Google Workspace theme with clean, modern interface and
 
 ## API Structure
 - **POST /generate_notes**: Accepts transcript text and returns AI-generated structured meeting notes
-- **GET /**: Serves the main transcription interface
+- **GET /**: Serves the main transcription interface with sidebar
+- **GET /meetings**: Returns list of all saved meetings with previews
+- **GET /meetings/<id>**: Returns specific meeting data including transcript and notes
 
 ## Data Flow
 1. Browser captures audio via Web Speech API
-2. Real-time transcript displayed to user
+2. Real-time transcript displayed to user in main content area
 3. Complete transcript sent to backend for AI processing
 4. OpenAI returns structured JSON with meeting summary, action items, decisions, and key points
 5. Generated notes stored in database and displayed to user
+6. Meeting history displayed in left sidebar for easy access and management
+7. Users can click on any previous meeting to view transcript and notes
 
 ## Design Patterns
 - **MVC Pattern**: Clear separation between models (SQLAlchemy), views (templates), and controllers (Flask routes)

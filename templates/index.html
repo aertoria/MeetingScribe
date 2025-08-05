@@ -17,8 +17,33 @@
 <body>
     <div class="container-fluid">
         <div class="row">
+            <!-- Meeting Management Sidebar -->
+            <div class="col-lg-3 col-md-4 d-none d-md-block sidebar-container">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h6 class="sidebar-title">
+                            <i data-feather="folder" class="me-2"></i>
+                            Meeting History
+                        </h6>
+                        <button id="refreshMeetingsBtn" class="btn btn-sm btn-outline-secondary">
+                            <i data-feather="refresh-cw" class="icon-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="sidebar-content">
+                        <div id="meetingsList" class="meetings-list">
+                            <div class="empty-meetings">
+                                <i data-feather="calendar" class="empty-icon"></i>
+                                <p class="text-muted mb-0">No meetings yet</p>
+                                <p class="text-muted small">Start recording to create your first meeting</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Main Content -->
-            <div class="col-12">
+            <div class="col-lg-9 col-md-8 col-12 main-container">
                 <header class="header-section">
                     <div class="container">
                         <div class="row align-items-center">
@@ -26,7 +51,10 @@
                                 <h1 class="mb-0">Meeting Transcription</h1>
                                 <p class="mb-0">Professional real-time note-taking</p>
                             </div>
-                            <div class="col-auto">
+                            <div class="col-auto d-flex gap-2">
+                                <button id="toggleSidebarBtn" class="btn btn-outline-secondary btn-sm d-md-none">
+                                    <i data-feather="menu" class="icon-sm"></i>
+                                </button>
                                 <button id="newMeetingBtn" class="btn btn-outline-secondary btn-sm">
                                     <i data-feather="plus" class="icon-sm me-2"></i>
                                     New Meeting

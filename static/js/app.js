@@ -7,10 +7,13 @@ class MeetingTranscription {
         this.transcript = '';
         this.interimTranscript = '';
         this.currentNotes = '';
+        this.currentMeetingId = null;
+        this.meetings = [];
         
         this.initializeElements();
         this.initializeSpeechRecognition();
         this.attachEventListeners();
+        this.loadMeetings();
     }
     
     initializeElements() {
@@ -30,6 +33,11 @@ class MeetingTranscription {
         this.generateNotesBtn = document.getElementById('generateNotesBtn');
         this.downloadNotesBtn = document.getElementById('downloadNotesBtn');
         this.newMeetingBtn = document.getElementById('newMeetingBtn');
+        
+        // Sidebar elements
+        this.meetingsList = document.getElementById('meetingsList');
+        this.refreshMeetingsBtn = document.getElementById('refreshMeetingsBtn');
+        this.toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
         
         // Modals
         this.loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
@@ -83,6 +91,12 @@ class MeetingTranscription {
         this.generateNotesBtn.addEventListener('click', () => this.generateNotes());
         this.downloadNotesBtn.addEventListener('click', () => this.downloadNotes());
         this.newMeetingBtn.addEventListener('click', () => this.newMeeting());
+        this.refreshMeetingsBtn.addEventListener('click', () => this.loadMeetings());
+        
+        // Mobile sidebar toggle
+        if (this.toggleSidebarBtn) {
+            this.toggleSidebarBtn.addEventListener('click', () => this.toggleSidebar());
+        }
     }
     
     async startRecording() {
@@ -256,10 +270,14 @@ class MeetingTranscription {
             
             // Display the notes
             this.currentNotes = data.notes;
+            this.currentMeetingId = data.meeting_id;
             this.displayNotes(this.currentNotes);
             
             // Enable download button
             this.downloadNotesBtn.disabled = false;
+            
+            // Refresh meetings list to show the new meeting
+            this.loadMeetings();
             
         } catch (error) {
             this.showError(`Failed to generate meeting notes: ${error.message}`);
@@ -304,6 +322,7 @@ class MeetingTranscription {
         this.transcript = '';
         this.interimTranscript = '';
         this.currentNotes = '';
+        this.currentMeetingId = null;
         
         // Reset UI
         this.clearTranscript();
@@ -312,9 +331,170 @@ class MeetingTranscription {
         this.downloadNotesBtn.disabled = true;
         this.updateStatus('Ready to Record', 'Click to start recording');
         
+        // Clear active meeting selection
+        this.clearActiveMeeting();
+        
         // Stop recording if active
         if (this.isRecording) {
             this.stopRecording();
+        }
+    }
+    
+    async loadMeetings() {
+        try {
+            const response = await fetch('/meetings');
+            const meetings = await response.json();
+            this.meetings = meetings;
+            this.renderMeetingsList();
+        } catch (error) {
+            console.error('Error loading meetings:', error);
+        }
+    }
+    
+    renderMeetingsList() {
+        if (this.meetings.length === 0) {
+            this.meetingsList.innerHTML = `
+                <div class="empty-meetings">
+                    <i data-feather="calendar" class="empty-icon"></i>
+                    <p class="text-muted mb-0">No meetings yet</p>
+                    <p class="text-muted small">Start recording to create your first meeting</p>
+                </div>
+            `;
+        } else {
+            const meetingsHtml = this.meetings.map(meeting => {
+                const date = new Date(meeting.created_at);
+                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const preview = this.extractPreview(meeting.notes);
+                
+                return `
+                    <div class="meeting-item" data-meeting-id="${meeting.id}">
+                        <div class="meeting-date">${formattedDate}</div>
+                        <div class="meeting-preview">${preview}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            this.meetingsList.innerHTML = meetingsHtml;
+        }
+        
+        feather.replace();
+        this.attachMeetingClickHandlers();
+    }
+    
+    extractPreview(notes) {
+        // Extract first meaningful line from notes
+        const lines = notes.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+        return lines[0] || 'Meeting notes';
+    }
+    
+    attachMeetingClickHandlers() {
+        const meetingItems = this.meetingsList.querySelectorAll('.meeting-item');
+        meetingItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const meetingId = parseInt(item.dataset.meetingId);
+                this.loadMeeting(meetingId);
+            });
+        });
+    }
+    
+    async loadMeeting(meetingId) {
+        try {
+            const response = await fetch(`/meetings/${meetingId}`);
+            const meeting = await response.json();
+            
+            // Load meeting data
+            this.transcript = meeting.transcript;
+            this.currentNotes = meeting.notes;
+            this.currentMeetingId = meeting.id;
+            
+            // Update UI
+            this.displayTranscriptFromText(meeting.transcript);
+            this.displayNotes(meeting.notes);
+            this.generateNotesBtn.disabled = false;
+            this.downloadNotesBtn.disabled = false;
+            this.updateStatus('Meeting Loaded', 'Viewing saved meeting');
+            
+            // Update active state
+            this.setActiveMeeting(meetingId);
+            
+        } catch (error) {
+            this.showError(`Failed to load meeting: ${error.message}`);
+        }
+    }
+    
+    displayTranscriptFromText(transcriptText) {
+        if (!transcriptText.trim()) {
+            this.clearTranscript();
+            return;
+        }
+        
+        const sentences = transcriptText.trim().split(/[.!?]+/).filter(s => s.trim());
+        let html = '';
+        sentences.forEach(sentence => {
+            if (sentence.trim()) {
+                html += `<div class="transcript-text">${sentence.trim()}.</div>`;
+            }
+        });
+        
+        this.transcriptElement.innerHTML = html;
+    }
+    
+    setActiveMeeting(meetingId) {
+        // Remove active class from all items
+        this.clearActiveMeeting();
+        
+        // Add active class to selected item
+        const meetingItem = this.meetingsList.querySelector(`[data-meeting-id="${meetingId}"]`);
+        if (meetingItem) {
+            meetingItem.classList.add('active');
+        }
+    }
+    
+    clearActiveMeeting() {
+        const activeItems = this.meetingsList.querySelectorAll('.meeting-item.active');
+        activeItems.forEach(item => item.classList.remove('active'));
+    }
+    
+    toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar-container');
+        if (sidebar) {
+            sidebar.classList.toggle('show');
+            
+            // Add overlay for mobile
+            if (sidebar.classList.contains('show')) {
+                this.addMobileOverlay();
+            } else {
+                this.removeMobileOverlay();
+            }
+        }
+    }
+    
+    addMobileOverlay() {
+        if (document.querySelector('.mobile-overlay')) return;
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'mobile-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        `;
+        
+        overlay.addEventListener('click', () => {
+            this.toggleSidebar();
+        });
+        
+        document.body.appendChild(overlay);
+    }
+    
+    removeMobileOverlay() {
+        const overlay = document.querySelector('.mobile-overlay');
+        if (overlay) {
+            overlay.remove();
         }
     }
     
