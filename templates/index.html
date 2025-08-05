@@ -23,12 +23,12 @@
                     <div class="container">
                         <div class="row align-items-center">
                             <div class="col">
-                                <h1 class="h3 mb-0 text-dark fw-bold">Meeting Transcription</h1>
-                                <p class="text-muted small mb-0">Professional real-time note-taking</p>
+                                <h1 class="mb-0">Meeting Transcription</h1>
+                                <p class="mb-0">Professional real-time note-taking</p>
                             </div>
                             <div class="col-auto">
                                 <button id="newMeetingBtn" class="btn btn-outline-secondary btn-sm">
-                                    <i data-feather="plus" class="icon-sm"></i>
+                                    <i data-feather="plus" class="icon-sm me-2"></i>
                                     New Meeting
                                 </button>
                             </div>
@@ -47,8 +47,10 @@
                                             <div id="recordingIndicator" class="recording-indicator">
                                                 <i data-feather="mic" class="recording-icon"></i>
                                             </div>
-                                            <h5 id="recordingStatus" class="mt-2 mb-0">Ready to Record</h5>
-                                            <p id="recordingSubtitle" class="text-muted small mb-0">Click to start recording</p>
+                                            <div class="mt-2">
+                                                <h5 id="recordingStatus" class="mb-0">Ready to Record</h5>
+                                                <p id="recordingSubtitle" class="mb-0">Click to start recording</p>
+                                            </div>
                                         </div>
                                         
                                         <button id="recordBtn" class="btn btn-primary btn-lg recording-btn">
@@ -66,7 +68,7 @@
                                 <!-- Actions Section -->
                                 <div class="card mt-3">
                                     <div class="card-body">
-                                        <h6 class="card-title">Actions</h6>
+                                        <h6 class="card-title mb-3">Actions</h6>
                                         <div class="d-grid gap-2">
                                             <button id="generateNotesBtn" class="btn btn-success" disabled>
                                                 <i data-feather="file-text" class="me-2"></i>

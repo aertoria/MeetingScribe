@@ -5,6 +5,7 @@ This is a meeting transcription web application that converts speech to text in 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Design theme preference: Google Workspace theme with clean, modern interface and Google's signature colors.
 
 # System Architecture
 
@@ -16,10 +17,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Frontend Architecture
 - **Template Engine**: Jinja2 templates with Flask
-- **UI Framework**: Bootstrap 5 for responsive design
+- **UI Framework**: Bootstrap 5 for responsive design with Google Workspace theme
 - **Speech Recognition**: Browser Web Speech API (webkitSpeechRecognition/SpeechRecognition)
 - **JavaScript**: Vanilla ES6+ with class-based architecture for real-time transcription handling
-- **Styling**: Custom CSS with CSS variables for consistent theming
+- **Styling**: Google Workspace theme with Material Design principles, Google Sans fonts, and Google's signature color palette
+- **Design System**: Google's color scheme (blue #1a73e8, green #34a853, red #ea4335, gray scale), rounded corners, subtle shadows, and clean typography
 
 ## API Structure
 - **POST /generate_notes**: Accepts transcript text and returns AI-generated structured meeting notes
