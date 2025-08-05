@@ -59,6 +59,12 @@ class MeetingTranscription {
         this.refreshMeetingsBtn = document.getElementById('refreshMeetingsBtn');
         this.toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
         
+        // Transcript stats  
+        this.speakerCount = document.getElementById('speakerCount');
+        this.speakerCountText = document.getElementById('speakerCountText');
+        this.wordCount = document.getElementById('wordCount');
+        this.wordCountText = document.getElementById('wordCountText');
+        
         // Chat elements
         this.chatMessages = document.getElementById('chatMessages');
         this.chatInput = document.getElementById('chatInput');
@@ -219,6 +225,9 @@ class MeetingTranscription {
         
         // Update display
         this.updateTranscriptDisplay();
+        
+        // Update stats
+        this.updateTranscriptStats();
     }
     
     handleSpeechError(event) {
@@ -251,11 +260,28 @@ class MeetingTranscription {
             this.stopBtn.style.display = 'inline-flex';
             this.recordingIndicator.classList.add('recording');
             this.updateStatus('Recording...', 'Speak clearly into your microphone', 'status-recording');
+            
+            // Show transcript stats
+            if (this.speakerCount) this.speakerCount.style.display = 'inline-flex';
+            if (this.wordCount) this.wordCount.style.display = 'inline-flex';
         } else {
             this.recordBtn.style.display = 'inline-flex';
             this.stopBtn.style.display = 'none';
             this.recordingIndicator.classList.remove('recording');
         }
+    }
+    
+    updateTranscriptStats() {
+        if (!this.speakerCountText || !this.wordCountText) return;
+        
+        // Update speaker count
+        const speakerSet = new Set(this.transcriptSegments.map(s => s.speaker));
+        const speakerCount = speakerSet.size || 0;
+        this.speakerCountText.textContent = `${speakerCount} speaker${speakerCount !== 1 ? 's' : ''}`;
+        
+        // Update word count
+        const wordCount = this.transcript.trim().split(/\s+/).filter(word => word.length > 0).length;
+        this.wordCountText.textContent = `${wordCount} word${wordCount !== 1 ? 's' : ''}`;
     }
     
     updateStatus(status, subtitle, className = 'status-ready') {
@@ -269,6 +295,7 @@ class MeetingTranscription {
             <div class="empty-state">
                 <i data-feather="mic" class="empty-icon"></i>
                 <p class="text-muted mb-0">Start recording to see live transcript</p>
+                <p class="text-muted small">Speech will appear here in real-time with speaker detection</p>
             </div>
         `;
         this.transcriptSegments = [];

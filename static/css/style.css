@@ -1018,3 +1018,110 @@ body {
 .spacing {
     height: 16px;
 }
+
+/* Compact Recording Controls in Sidebar */
+.sidebar-section {
+    padding: 20px;
+}
+
+.sidebar-divider {
+    margin: 16px 20px;
+    border-color: var(--google-gray-200);
+}
+
+.recording-controls-compact {
+    padding: 12px 0;
+}
+
+.recording-status-compact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--google-gray-50);
+    border-radius: 8px;
+}
+
+.recording-indicator-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--google-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.recording-indicator-small.recording {
+    background: var(--google-red);
+    animation: pulse 1.5s infinite;
+}
+
+.recording-icon-small {
+    color: white !important;
+    width: 20px;
+    height: 20px;
+}
+
+.status-text {
+    flex: 1;
+}
+
+.status-ready {
+    color: var(--google-green);
+    font-weight: 500;
+}
+
+.status-recording {
+    color: var(--google-red);
+    font-weight: 500;
+}
+
+.control-buttons {
+    margin-top: 12px;
+}
+
+.action-buttons button {
+    font-size: 13px;
+}
+
+/* Full-width Transcript Card */
+.transcript-card-full {
+    height: calc(100vh - 240px);
+    display: flex;
+    flex-direction: column;
+}
+
+.transcript-card-full .card-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+}
+
+.transcript-content-full {
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--google-gray-50);
+}
+
+.transcript-actions {
+    display: flex;
+    align-items: center;
+}
+
+.transcript-actions .badge {
+    font-weight: normal;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Word Count and Speaker Count Badges */
+#speakerCount {
+    background-color: var(--google-blue) !important;
+}
+
+#wordCount {
+    background-color: var(--google-green) !important;
+}
