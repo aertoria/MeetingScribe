@@ -42,6 +42,11 @@ Design theme preference: Google Workspace theme with clean, modern interface and
 - **PDF Export**: Professional PDF generation with Google Workspace styling
 - **Visual Summary**: Color-coded action items summary with priority highlighting
 
+### AI Assistant Features
+- **Preset Prompts**: Quick-access buttons for common queries like "Summarize" and "What are smart questions to ask"
+- **Context-Aware Chat**: Gemini AI assistant automatically receives transcript context for relevant responses
+- **Real-time Integration**: AI chat is available during recording for immediate insights
+
 ## Data Flow
 1. Browser captures audio via Web Speech API
 2. Real-time transcript displayed to user in main content area

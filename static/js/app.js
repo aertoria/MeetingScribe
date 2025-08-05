@@ -845,6 +845,65 @@ class MeetingTranscription {
         if (this.clearChatBtn) {
             this.clearChatBtn.addEventListener('click', () => this.clearChat());
         }
+        
+        // Preset prompt buttons
+        const presetButtons = document.querySelectorAll('.preset-btn');
+        presetButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const prompt = e.currentTarget.dataset.prompt;
+                if (prompt) {
+                    this.sendPresetPrompt(prompt);
+                }
+            });
+        });
+    }
+    
+    async sendPresetPrompt(prompt) {
+        // Check if we have a transcript
+        if (!this.transcript || this.transcript.trim().length === 0) {
+            this.showError('Please record some speech first before using preset prompts.');
+            return;
+        }
+        
+        // Add user message to chat
+        this.addChatMessage(prompt, true);
+        
+        // Disable inputs while sending
+        this.chatInput.disabled = true;
+        this.sendChatBtn.disabled = true;
+        
+        try {
+            // Get current transcript as context
+            const context = this.getTranscriptText();
+            
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: prompt,
+                    context: context
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Chat request failed');
+            }
+            
+            // Add AI response to chat
+            this.addChatMessage(data.response, false);
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            this.addChatMessage('Sorry, I encountered an error. Please try again.', false);
+        } finally {
+            // Re-enable inputs
+            this.chatInput.disabled = false;
+            this.sendChatBtn.disabled = false;
+        }
     }
     
     async sendMessage() {
