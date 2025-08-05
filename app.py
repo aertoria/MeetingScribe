@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from openai_service import generate_meeting_notes
+from gemini_service import chat_with_gemini
 
 
 # Configure logging
@@ -91,6 +92,28 @@ def get_meeting(meeting_id):
         'created_at': meeting.created_at.isoformat()
     })
 
+@app.route('/chat', methods=['POST'])
+def chat():
+    """Chat with Gemini AI"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+        context = data.get('context', '')
+        
+        if not message.strip():
+            return jsonify({'error': 'No message provided'}), 400
+        
+        # Get response from Gemini
+        response = chat_with_gemini(message, context)
+        
+        return jsonify({
+            'success': True,
+            'response': response
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in chat: {str(e)}")
+        return jsonify({'error': f'Chat failed: {str(e)}'}), 500
 
 
 if __name__ == '__main__':

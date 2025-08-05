@@ -43,7 +43,7 @@
             </div>
             
             <!-- Main Content -->
-            <div class="col-lg-9 col-md-8 col-12 main-container">
+            <div class="col-lg-6 col-md-8 col-12 main-container">
                 <header class="header-section">
                     <div class="container">
                         <div class="row align-items-center">
@@ -153,7 +153,49 @@
                 </main>
             </div>
             
-
+            <!-- Gemini Chat Sidebar -->
+            <div class="col-lg-3 d-none d-lg-block chat-sidebar-container">
+                <div class="chat-sidebar">
+                    <div class="chat-header">
+                        <h6 class="chat-title">
+                            <i data-feather="message-square" class="me-2"></i>
+                            AI Assistant
+                        </h6>
+                        <button id="clearChatBtn" class="btn btn-sm btn-outline-secondary" title="Clear Chat">
+                            <i data-feather="trash-2" class="icon-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="chat-content">
+                        <div id="chatMessages" class="chat-messages">
+                            <div class="chat-message ai-message">
+                                <div class="message-avatar">
+                                    <i data-feather="cpu" class="avatar-icon"></i>
+                                </div>
+                                <div class="message-content">
+                                    <p>Hello! I'm your AI assistant. I'll automatically analyze your meeting transcript as you speak.</p>
+                                    <p>Start recording to see real-time insights!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-area">
+                        <div class="input-group">
+                            <input type="text" id="chatInput" class="form-control" placeholder="Ask about the meeting..." disabled>
+                            <button id="sendChatBtn" class="btn btn-primary" disabled>
+                                <i data-feather="send" class="icon-sm"></i>
+                            </button>
+                        </div>
+                        <div class="chat-status">
+                            <small class="text-muted">Powered by Gemini AI</small>
+                            <div class="context-indicator" id="contextIndicator" style="display: none;">
+                                <i data-feather="check-circle" style="width: 12px; height: 12px;"></i> Context updated
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

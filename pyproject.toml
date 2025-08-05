@@ -11,6 +11,7 @@ dependencies = [
     "gunicorn>=23.0.0",
     "openai>=1.98.0",
     "psycopg2-binary>=2.9.10",
+    "sift-stack-py>=0.8.2",
     "sqlalchemy>=2.0.42",
     "werkzeug>=3.1.3",
 ]

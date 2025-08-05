@@ -10,9 +10,27 @@ class MeetingTranscription {
         this.currentMeetingId = null;
         this.meetings = [];
         
+        // Speaker detection
+        this.currentSpeaker = 1;
+        this.speakers = new Map();
+        this.lastSpeechTime = Date.now();
+        this.speakerColors = [
+            '#1a73e8', // Google Blue
+            '#34a853', // Google Green  
+            '#ea4335', // Google Red
+            '#fbbc04', // Google Yellow
+            '#673ab7', // Purple
+            '#ff6f00', // Orange
+            '#00796b', // Teal
+            '#5d4037'  // Brown
+        ];
+        this.speakerChangeThreshold = 2000; // 2 seconds pause indicates possible speaker change
+        this.transcriptSegments = [];
+        
         this.initializeElements();
         this.initializeSpeechRecognition();
         this.attachEventListeners();
+        this.setupChatListeners();
         this.loadMeetings();
     }
     
@@ -38,6 +56,13 @@ class MeetingTranscription {
         this.meetingsList = document.getElementById('meetingsList');
         this.refreshMeetingsBtn = document.getElementById('refreshMeetingsBtn');
         this.toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+        
+        // Chat elements
+        this.chatMessages = document.getElementById('chatMessages');
+        this.chatInput = document.getElementById('chatInput');
+        this.sendChatBtn = document.getElementById('sendChatBtn');
+        this.clearChatBtn = document.getElementById('clearChatBtn');
+        this.contextIndicator = document.getElementById('contextIndicator');
         
 
         
@@ -150,10 +175,28 @@ class MeetingTranscription {
         let interimTranscript = '';
         let finalTranscript = '';
         
+        // Check for speaker change based on pause duration
+        const currentTime = Date.now();
+        const timeSinceLastSpeech = currentTime - this.lastSpeechTime;
+        
+        if (timeSinceLastSpeech > this.speakerChangeThreshold && this.transcript.trim()) {
+            // Possible speaker change
+            this.currentSpeaker = (this.currentSpeaker % 8) + 1;
+        }
+        
+        this.lastSpeechTime = currentTime;
+        
         for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
             
             if (event.results[i].isFinal) {
+                // Store transcript segment with speaker info
+                this.transcriptSegments.push({
+                    text: transcript,
+                    speaker: this.currentSpeaker,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                
                 finalTranscript += transcript + ' ';
             } else {
                 interimTranscript += transcript;
@@ -218,31 +261,71 @@ class MeetingTranscription {
                 <p class="text-muted mb-0">Start recording to see live transcript</p>
             </div>
         `;
+        this.transcriptSegments = [];
+        this.currentSpeaker = 1;
         feather.replace();
     }
     
     updateTranscriptDisplay() {
         let html = '';
         
-        // Add final transcript
-        if (this.transcript.trim()) {
-            const sentences = this.transcript.trim().split(/[.!?]+/).filter(s => s.trim());
-            sentences.forEach(sentence => {
-                if (sentence.trim()) {
-                    html += `<div class="transcript-text">${sentence.trim()}.</div>`;
+        // Display transcript segments with speaker labels and colors
+        if (this.transcriptSegments.length > 0) {
+            let currentSpeakerBlock = null;
+            let blockHtml = '';
+            
+            this.transcriptSegments.forEach((segment, index) => {
+                if (currentSpeakerBlock !== segment.speaker) {
+                    // Close previous speaker block
+                    if (blockHtml) {
+                        html += blockHtml + '</div></div>';
+                    }
+                    
+                    // Start new speaker block
+                    currentSpeakerBlock = segment.speaker;
+                    const color = this.speakerColors[(segment.speaker - 1) % this.speakerColors.length];
+                    blockHtml = `
+                        <div class="speaker-block" data-speaker="${segment.speaker}">
+                            <div class="speaker-label" style="background-color: ${color}">
+                                <span>Speaker ${segment.speaker}</span>
+                                <small>${segment.timestamp}</small>
+                            </div>
+                            <div class="speaker-content">`;
                 }
+                
+                blockHtml += `<span class="transcript-segment">${segment.text} </span>`;
             });
+            
+            // Close last speaker block
+            if (blockHtml) {
+                html += blockHtml + '</div></div>';
+            }
         }
         
-        // Add interim transcript
+        // Add interim transcript with current speaker
         if (this.interimTranscript.trim()) {
-            html += `<div class="transcript-text interim">${this.interimTranscript}</div>`;
+            const color = this.speakerColors[(this.currentSpeaker - 1) % this.speakerColors.length];
+            html += `
+                <div class="speaker-block interim" data-speaker="${this.currentSpeaker}">
+                    <div class="speaker-label" style="background-color: ${color}">
+                        <span>Speaker ${this.currentSpeaker}</span>
+                        <small>Speaking...</small>
+                    </div>
+                    <div class="speaker-content">
+                        <span class="transcript-segment interim">${this.interimTranscript}</span>
+                    </div>
+                </div>`;
         }
         
         if (html) {
             this.transcriptElement.innerHTML = html;
             // Scroll to bottom
             this.transcriptElement.scrollTop = this.transcriptElement.scrollHeight;
+            
+            // Submit context to Gemini automatically
+            if (this.chatInput && !this.chatInput.disabled) {
+                this.updateGeminiContext();
+            }
         }
     }
     
@@ -501,6 +584,143 @@ class MeetingTranscription {
         if (overlay) {
             overlay.remove();
         }
+    }
+    
+    setupChatListeners() {
+        if (!this.chatInput || !this.sendChatBtn) return;
+        
+        // Enable chat when recording starts
+        this.chatInput.disabled = false;
+        this.sendChatBtn.disabled = false;
+        
+        // Send button click
+        this.sendChatBtn.addEventListener('click', () => this.sendMessage());
+        
+        // Enter key in input
+        this.chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        
+        // Clear chat button
+        if (this.clearChatBtn) {
+            this.clearChatBtn.addEventListener('click', () => this.clearChat());
+        }
+    }
+    
+    async sendMessage() {
+        const message = this.chatInput.value.trim();
+        if (!message) return;
+        
+        // Add user message to chat
+        this.addChatMessage(message, true);
+        
+        // Clear input
+        this.chatInput.value = '';
+        
+        // Disable inputs while sending
+        this.chatInput.disabled = true;
+        this.sendChatBtn.disabled = true;
+        
+        try {
+            // Get current transcript as context
+            const context = this.getTranscriptText();
+            
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    context: context
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Chat request failed');
+            }
+            
+            // Add AI response to chat
+            this.addChatMessage(data.response, false);
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            this.addChatMessage('Sorry, I encountered an error. Please try again.', false);
+        } finally {
+            // Re-enable inputs
+            this.chatInput.disabled = false;
+            this.sendChatBtn.disabled = false;
+            this.chatInput.focus();
+        }
+    }
+    
+    addChatMessage(message, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${isUser ? 'user-message' : 'ai-message'}`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = `<i data-feather="${isUser ? 'user' : 'cpu'}" class="avatar-icon"></i>`;
+        
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        
+        // Split message into paragraphs
+        const paragraphs = message.split('\n').filter(p => p.trim());
+        paragraphs.forEach(para => {
+            const p = document.createElement('p');
+            p.textContent = para;
+            content.appendChild(p);
+        });
+        
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(content);
+        
+        this.chatMessages.appendChild(messageDiv);
+        feather.replace();
+        
+        // Scroll to bottom
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+    
+    clearChat() {
+        // Keep only the initial AI message
+        const firstMessage = this.chatMessages.querySelector('.chat-message');
+        this.chatMessages.innerHTML = '';
+        if (firstMessage) {
+            this.chatMessages.appendChild(firstMessage);
+        }
+    }
+    
+    updateGeminiContext() {
+        // Show context indicator briefly
+        if (this.contextIndicator) {
+            this.contextIndicator.style.display = 'block';
+            setTimeout(() => {
+                this.contextIndicator.style.display = 'none';
+            }, 2000);
+        }
+    }
+    
+    getTranscriptText() {
+        // Build full transcript text from segments
+        let fullText = '';
+        
+        this.transcriptSegments.forEach(segment => {
+            fullText += `Speaker ${segment.speaker}: ${segment.text}\n`;
+        });
+        
+        // Add interim transcript if present
+        if (this.interimTranscript.trim()) {
+            fullText += `Speaker ${this.currentSpeaker}: ${this.interimTranscript}\n`;
+        }
+        
+        return fullText.trim();
     }
     
     showError(message) {
