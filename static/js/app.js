@@ -45,6 +45,7 @@ class MeetingTranscription {
         this.recordingIndicator = document.getElementById('recordingIndicator');
         this.recordingStatus = document.getElementById('recordingStatus');
         this.recordingSubtitle = document.getElementById('recordingSubtitle');
+        this.mockConversationBtn = document.getElementById('mockConversationBtn');
         
         // Transcript and notes
         this.transcriptElement = document.getElementById('transcript');
@@ -131,6 +132,11 @@ class MeetingTranscription {
         this.downloadNotesBtn.addEventListener('click', () => this.downloadNotes());
         this.newMeetingBtn.addEventListener('click', () => this.newMeeting());
         this.refreshMeetingsBtn.addEventListener('click', () => this.loadMeetings());
+        
+        // Mock conversation button
+        if (this.mockConversationBtn) {
+            this.mockConversationBtn.addEventListener('click', () => this.startMockConversation());
+        }
         
         // New action buttons
         if (this.copyNotesBtn) {
@@ -380,6 +386,89 @@ class MeetingTranscription {
         pattern.totalWords += wordCount;
         pattern.segments += 1;
         pattern.avgSegmentLength = pattern.totalWords / pattern.segments;
+    }
+    
+    startMockConversation() {
+        // Clear existing transcript
+        this.clearTranscript();
+        this.transcript = '';
+        this.transcriptSegments = [];
+        this.currentSpeaker = 1;
+        this.speakerHistory = [];
+        
+        // Mock conversation between two speakers
+        const conversation = [
+            { speaker: 1, text: "Good morning everyone. Let's start with our weekly status meeting.", delay: 0 },
+            { speaker: 1, text: "I'd like to hear updates from each team on their current projects.", delay: 2000 },
+            { speaker: 2, text: "Thanks for starting us off. I can provide an update on the marketing campaign.", delay: 1200 },
+            { speaker: 2, text: "We've completed the initial design phase and are now moving into content creation.", delay: 1800 },
+            { speaker: 1, text: "That sounds great! What's the timeline looking like for the launch?", delay: 1500 },
+            { speaker: 2, text: "We're targeting the end of next month. The creative assets should be ready by next week.", delay: 1300 },
+            { speaker: 2, text: "Then we'll need about two weeks for review and final adjustments.", delay: 1600 },
+            { speaker: 1, text: "Perfect. Make sure to coordinate with the development team on the landing page.", delay: 2000 },
+            { speaker: 1, text: "They mentioned they might need extra time for mobile optimization.", delay: 1400 },
+            { speaker: 2, text: "Absolutely, I'll schedule a sync with them this afternoon.", delay: 1200 },
+            { speaker: 1, text: "Excellent. Now, let's discuss the budget allocation for Q2.", delay: 2500 },
+            { speaker: 1, text: "We need to review our priorities based on the latest projections.", delay: 1500 },
+            { speaker: 2, text: "I've prepared a breakdown of our current spending versus projected needs.", delay: 1300 },
+            { speaker: 2, text: "Should I share that with the team now or send it after the meeting?", delay: 1400 },
+            { speaker: 1, text: "Let's review the highlights now and you can send the detailed version later.", delay: 1600 },
+            { speaker: 2, text: "Sounds good. The main areas where we need adjustment are digital advertising and events.", delay: 1500 },
+            { speaker: 1, text: "Understood. We should prioritize digital given the current market trends.", delay: 1800 },
+            { speaker: 2, text: "Agreed. I'll revise the allocation and send an updated proposal by tomorrow.", delay: 1400 }
+        ];
+        
+        // Show recording UI
+        this.updateStatus('Playing Demo', 'Simulating a two-person conversation', 'status-recording');
+        this.mockConversationBtn.disabled = true;
+        this.mockConversationBtn.textContent = 'Playing...';
+        
+        // Play conversation with delays
+        let totalDelay = 0;
+        conversation.forEach(({ speaker, text, delay }) => {
+            totalDelay += delay;
+            setTimeout(() => {
+                this.addMockTranscript(speaker, text);
+            }, totalDelay);
+        });
+        
+        // Re-enable button after conversation
+        setTimeout(() => {
+            this.mockConversationBtn.disabled = false;
+            this.mockConversationBtn.innerHTML = '<i data-feather="users" class="me-2"></i>Demo Conversation';
+            feather.replace();
+            this.updateStatus('Demo Complete', 'Mock conversation finished');
+            this.generateNotesBtn.disabled = false;
+        }, totalDelay + 2000);
+    }
+    
+    addMockTranscript(speakerId, text) {
+        // Set current speaker
+        this.currentSpeaker = speakerId;
+        
+        // Update speaker history
+        if (!this.speakerHistory.includes(speakerId)) {
+            this.speakerHistory.push(speakerId);
+        }
+        
+        // Add to transcript segments
+        this.transcriptSegments.push({
+            text: text,
+            speaker: speakerId,
+            timestamp: new Date().toLocaleTimeString()
+        });
+        
+        // Update transcript text
+        this.transcript += text + ' ';
+        
+        // Update display
+        this.updateTranscriptDisplay();
+        
+        // Update stats
+        this.updateTranscriptStats();
+        
+        // Update pattern tracking
+        this.updateSpeakerPattern(speakerId, text);
     }
     
     updateTranscriptDisplay() {
