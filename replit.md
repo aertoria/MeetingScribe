@@ -22,7 +22,13 @@ Design theme preference: Google Workspace theme with clean, modern interface and
 - **JavaScript**: Vanilla ES6+ with class-based architecture for real-time transcription handling
 - **Styling**: Google Workspace theme with Material Design principles, Google Sans fonts, and Google's signature color palette
 - **Design System**: Google's color scheme (blue #1a73e8, green #34a853, red #ea4335, gray scale), rounded corners, subtle shadows, and clean typography
-- **Speaker Detection**: Smart voice correlation using timing patterns (< 1.5s = same speaker, 1.5-3s = context-aware, > 3s = new speaker) with pattern recognition for alternating conversations
+- **Speaker Detection**: Enhanced voice correlation with smart timing patterns:
+  - < 1.5s pause = same speaker continuing
+  - 1.5-3s pause = likely same speaker (context-aware)
+  - > 3s pause = probable speaker change
+  - Tracks speaker history for pattern recognition
+  - Detects alternating conversation patterns
+  - Maintains consistent speaker labels across re-appearances
 
 ## API Structure
 - **POST /generate_notes**: Accepts transcript text and returns AI-generated structured meeting notes with enhanced action items extraction

@@ -366,6 +366,26 @@ class MeetingTranscription {
     }
     
     updateSpeakerPattern(speakerId, text) {
+        // Store speech patterns for future correlation
+        if (!this.speakerPatterns.has(speakerId)) {
+            this.speakerPatterns.set(speakerId, {
+                textLength: [],
+                pauseDurations: [],
+                lastSpeechTime: Date.now()
+            });
+        }
+        
+        const pattern = this.speakerPatterns.get(speakerId);
+        pattern.textLength.push(text.length);
+        pattern.lastSpeechTime = Date.now();
+        
+        // Keep only recent patterns
+        if (pattern.textLength.length > 10) {
+            pattern.textLength.shift();
+        }
+    }
+    
+    updateSpeakerPattern(speakerId, text) {
         // Store speech patterns for each speaker (word count, average segment length)
         if (!this.speakerPatterns.has(speakerId)) {
             this.speakerPatterns.set(speakerId, {
