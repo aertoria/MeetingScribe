@@ -183,8 +183,12 @@ body {
     padding: 0;
 }
 
+.top-controls {
+    padding: 8px 0;
+}
+
 .main-content {
-    min-height: calc(100vh - 120px);
+    min-height: calc(100vh - 60px);
     padding: 0 20px;
 }
 
