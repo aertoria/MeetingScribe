@@ -39,6 +39,13 @@ class MeetingTranscription {
         this.refreshMeetingsBtn = document.getElementById('refreshMeetingsBtn');
         this.toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
         
+        // Chat elements
+        this.chatMessages = document.getElementById('chatMessages');
+        this.chatInput = document.getElementById('chatInput');
+        this.sendChatBtn = document.getElementById('sendChatBtn');
+        this.getInsightsBtn = document.getElementById('getInsightsBtn');
+        this.toggleChatBtn = document.getElementById('toggleChatBtn');
+        
         // Modals
         this.loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
         this.errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
@@ -93,9 +100,22 @@ class MeetingTranscription {
         this.newMeetingBtn.addEventListener('click', () => this.newMeeting());
         this.refreshMeetingsBtn.addEventListener('click', () => this.loadMeetings());
         
+        // Chat functionality
+        this.sendChatBtn.addEventListener('click', () => this.sendMessage());
+        this.chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        this.getInsightsBtn.addEventListener('click', () => this.getInsights());
+        
         // Mobile sidebar toggle
         if (this.toggleSidebarBtn) {
             this.toggleSidebarBtn.addEventListener('click', () => this.toggleSidebar());
+        }
+        if (this.toggleChatBtn) {
+            this.toggleChatBtn.addEventListener('click', () => this.toggleChat());
         }
     }
     
@@ -135,6 +155,7 @@ class MeetingTranscription {
         // Enable generate notes button if we have transcript
         if (this.transcript.trim()) {
             this.generateNotesBtn.disabled = false;
+            this.enableChat();
             this.updateStatus('Processing Complete', 'Ready to generate meeting notes');
         } else {
             this.updateStatus('No Speech Detected', 'Please try recording again');
@@ -412,6 +433,7 @@ class MeetingTranscription {
             this.displayNotes(meeting.notes);
             this.generateNotesBtn.disabled = false;
             this.downloadNotesBtn.disabled = false;
+            this.enableChat();
             this.updateStatus('Meeting Loaded', 'Viewing saved meeting');
             
             // Update active state
@@ -501,6 +523,150 @@ class MeetingTranscription {
     showError(message) {
         this.errorMessage.textContent = message;
         this.errorModal.show();
+    }
+    
+    // Chat functionality
+    enableChat() {
+        this.chatInput.disabled = false;
+        this.sendChatBtn.disabled = false;
+        this.getInsightsBtn.disabled = false;
+        this.chatInput.placeholder = "Ask me anything about your meeting...";
+    }
+    
+    disableChat() {
+        this.chatInput.disabled = true;
+        this.sendChatBtn.disabled = true;
+        this.getInsightsBtn.disabled = true;
+        this.chatInput.placeholder = "Start recording to enable chat...";
+    }
+    
+    async sendMessage() {
+        const message = this.chatInput.value.trim();
+        if (!message) return;
+        
+        // Add user message to chat
+        this.addMessageToChat(message, 'user');
+        this.chatInput.value = '';
+        
+        try {
+            // Send to backend
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    context: this.transcript
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.addMessageToChat(data.response, 'ai');
+            } else {
+                this.addMessageToChat('Sorry, I encountered an error. Please try again.', 'ai');
+            }
+        } catch (error) {
+            console.error('Chat error:', error);
+            this.addMessageToChat('Sorry, I encountered a connection error. Please try again.', 'ai');
+        }
+    }
+    
+    addMessageToChat(message, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${sender}-message`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = sender === 'user' 
+            ? '<i data-feather="user" class="avatar-icon"></i>'
+            : '<i data-feather="cpu" class="avatar-icon"></i>';
+        
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        
+        // Format AI responses with proper paragraphs
+        if (sender === 'ai') {
+            const paragraphs = message.split('\n').filter(p => p.trim());
+            content.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+        } else {
+            content.innerHTML = `<p>${message}</p>`;
+        }
+        
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(content);
+        
+        this.chatMessages.appendChild(messageDiv);
+        
+        // Update icons and scroll to bottom
+        feather.replace();
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+    
+    async getInsights() {
+        if (!this.currentMeetingId) {
+            this.addMessageToChat('Please save your meeting first to get insights.', 'ai');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/meeting_insights/${this.currentMeetingId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.addMessageToChat(data.insights, 'ai');
+            } else {
+                this.addMessageToChat('Sorry, I couldn\'t generate insights. Please try again.', 'ai');
+            }
+        } catch (error) {
+            console.error('Insights error:', error);
+            this.addMessageToChat('Sorry, I encountered an error getting insights. Please try again.', 'ai');
+        }
+    }
+    
+    toggleChat() {
+        const chatSidebar = document.querySelector('.chat-sidebar-container');
+        if (chatSidebar) {
+            chatSidebar.classList.toggle('show');
+            
+            // Add overlay for mobile
+            if (chatSidebar.classList.contains('show')) {
+                this.addMobileChatOverlay();
+            } else {
+                this.removeMobileChatOverlay();
+            }
+        }
+    }
+    
+    addMobileChatOverlay() {
+        if (document.querySelector('.mobile-chat-overlay')) return;
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'mobile-chat-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        `;
+        
+        overlay.addEventListener('click', () => {
+            this.toggleChat();
+        });
+        
+        document.body.appendChild(overlay);
+    }
+    
+    removeMobileChatOverlay() {
+        const overlay = document.querySelector('.mobile-chat-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
     }
 }
 

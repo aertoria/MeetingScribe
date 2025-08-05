@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from openai_service import generate_meeting_notes
+from gemini_service import chat_with_gemini, get_meeting_insights
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -89,6 +90,45 @@ def get_meeting(meeting_id):
         'notes': meeting.notes,
         'created_at': meeting.created_at.isoformat()
     })
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    """Chat with Gemini AI"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+        context = data.get('context', '')
+        
+        if not message.strip():
+            return jsonify({'error': 'No message provided'}), 400
+        
+        # Get response from Gemini
+        response = chat_with_gemini(message, context)
+        
+        return jsonify({
+            'success': True,
+            'response': response
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in chat: {str(e)}")
+        return jsonify({'error': f'Chat failed: {str(e)}'}), 500
+
+@app.route('/meeting_insights/<int:meeting_id>')
+def meeting_insights(meeting_id):
+    """Get AI insights for a specific meeting"""
+    try:
+        meeting = models.Meeting.query.get_or_404(meeting_id)
+        insights = get_meeting_insights(meeting.transcript, meeting.notes)
+        
+        return jsonify({
+            'success': True,
+            'insights': insights
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting insights: {str(e)}")
+        return jsonify({'error': f'Failed to get insights: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
