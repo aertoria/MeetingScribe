@@ -1,0 +1,199 @@
+{
+  "session_date": "2025-08-11T23:58:17.583357",
+  "diarization_enabled": true,
+  "speakers_detected": 4,
+  "speakers": [
+    "Speaker 1",
+    "Speaker 2",
+    "Speaker 3",
+    "Speaker 4"
+  ],
+  "speaker_stats": {
+    "Speaker 1": 2,
+    "Speaker 2": 20,
+    "Speaker 3": 1,
+    "Speaker 4": 7
+  },
+  "transcript": [
+    {
+      "time": "23:56:23",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "It's in good"
+    },
+    {
+      "time": "23:56:26",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "you good?"
+    },
+    {
+      "time": "23:56:29",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "This is great. How about the other one?"
+    },
+    {
+      "time": "23:56:30",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "This is great."
+    },
+    {
+      "time": "23:56:32",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Looks like it's good."
+    },
+    {
+      "time": "23:56:35",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Let's talk about it."
+    },
+    {
+      "time": "23:56:38",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Hello. I'm Caroline Steele."
+    },
+    {
+      "time": "23:56:43",
+      "speaker": "Speaker 3",
+      "speaker_id": 2,
+      "text": "This is the BBC World Service, and welcome to the engineers."
+    },
+    {
+      "time": "23:56:50",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "How about me? Can you talk to me?"
+    },
+    {
+      "time": "23:56:52",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "This is great."
+    },
+    {
+      "time": "23:56:54",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "But, let's come back."
+    },
+    {
+      "time": "23:57:15",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "Many people don't realize it, but Ariana Grande's natural voice is actually much"
+    },
+    {
+      "time": "23:57:16",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "deeper than most would"
+    },
+    {
+      "time": "23:57:20",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "ex Really? How about me? Can you recognize me?"
+    },
+    {
+      "time": "23:57:21",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Back?"
+    },
+    {
+      "time": "23:57:26",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "Back. Why is everyone asking me this? You're insane."
+    },
+    {
+      "time": "23:57:27",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "Yes. You're insane. You're insane. You're insane. You're insane."
+    },
+    {
+      "time": "23:57:29",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "However, a deep voice isn't"
+    },
+    {
+      "time": "23:57:30",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Really?"
+    },
+    {
+      "time": "23:57:32",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Can you just come back and forth?"
+    },
+    {
+      "time": "23:57:36",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "Necessarily healthy for a singer's vocal cords. As a result,"
+    },
+    {
+      "time": "23:57:38",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "Ariana has made it clear many times that"
+    },
+    {
+      "time": "23:57:47",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Awesome. This is great."
+    },
+    {
+      "time": "23:57:50",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Now I want you to remove the"
+    },
+    {
+      "time": "23:57:52",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "small icon"
+    },
+    {
+      "time": "23:57:54",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "on the app."
+    },
+    {
+      "time": "23:57:59",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Also, I want you to remove"
+    },
+    {
+      "time": "23:58:04",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "other relevant file in the same folder."
+    },
+    {
+      "time": "23:58:07",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Except this file that's working."
+    },
+    {
+      "time": "23:58:11",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "So"
+    }
+  ]
+}

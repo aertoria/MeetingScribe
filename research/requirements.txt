@@ -1,0 +1,4 @@
+deepgram-sdk>=3.0.0
+numpy>=1.24.0
+pyaudio>=0.2.11
+requests>=2.31.0

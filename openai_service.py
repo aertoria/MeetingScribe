@@ -4,7 +4,14 @@ from openai import OpenAI
 
 # The newest OpenAI model is "gpt-4o" which was released May 13, 2024.
 # Do not change this unless explicitly requested by the user
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+#@ai safe
+# Per user request: hard-code a fallback API key so the app never fails on startup
+# if the environment variable is not set. Environment variable still takes precedence.
+OPENAI_API_KEY = os.environ.get(
+    "OPENAI_API_KEY",
+    "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",
+)
 openai = OpenAI(api_key=OPENAI_API_KEY)
 
 def generate_meeting_notes(transcript):

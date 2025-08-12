@@ -1,0 +1,139 @@
+{
+  "session_date": "2025-08-12T00:03:05.148353",
+  "diarization_enabled": true,
+  "speakers_detected": 4,
+  "speakers": [
+    "Speaker 1",
+    "Speaker 2",
+    "Speaker 3",
+    "Speaker 4"
+  ],
+  "speaker_stats": {
+    "Speaker 1": 8,
+    "Speaker 2": 8,
+    "Speaker 3": 2,
+    "Speaker 4": 2
+  },
+  "transcript": [
+    {
+      "time": "00:01:55",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "Okay."
+    },
+    {
+      "time": "00:01:57",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "How about, let's do it."
+    },
+    {
+      "time": "00:02:04",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "Yeah."
+    },
+    {
+      "time": "00:02:06",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "Okay."
+    },
+    {
+      "time": "00:02:11",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "She switches up her voice depending on how much singing she's doing. This is what"
+    },
+    {
+      "time": "00:02:11",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Ari sounds like."
+    },
+    {
+      "time": "00:02:14",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "How about me?"
+    },
+    {
+      "time": "00:02:15",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "Is that back?"
+    },
+    {
+      "time": "00:02:19",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "It's like when she talks in her natural voice. And this is"
+    },
+    {
+      "time": "00:02:21",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "tonally"
+    },
+    {
+      "time": "00:02:22",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "what I want to set the"
+    },
+    {
+      "time": "00:02:25",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "pace for the album with, I think. Woah."
+    },
+    {
+      "time": "00:02:27",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Don't say that too loud."
+    },
+    {
+      "time": "00:02:29",
+      "speaker": "Speaker 2",
+      "speaker_id": 1,
+      "text": "Hope Scooter doesn't watch this."
+    },
+    {
+      "time": "00:02:32",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "Soon. I'll just send it."
+    },
+    {
+      "time": "00:02:37",
+      "speaker": "Speaker 1",
+      "speaker_id": 0,
+      "text": "Okay. How about me?"
+    },
+    {
+      "time": "00:02:57",
+      "speaker": "Speaker 3",
+      "speaker_id": 2,
+      "text": "What's the best piece of advice you ever got? Well, the one really amazing piece of advice I've got which I followed till today is"
+    },
+    {
+      "time": "00:02:58",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "respect people's time."
+    },
+    {
+      "time": "00:03:00",
+      "speaker": "Speaker 4",
+      "speaker_id": 3,
+      "text": "If you want your time to be respected."
+    },
+    {
+      "time": "00:03:02",
+      "speaker": "Speaker 3",
+      "speaker_id": 2,
+      "text": "What's the best pizza?"
+    }
+  ]
+}

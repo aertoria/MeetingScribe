@@ -1,0 +1,23 @@
+{
+  "session_date": "2025-08-11T23:49:53.790990",
+  "speakers": [
+    "Speaker 1"
+  ],
+  "transcript": [
+    {
+      "time": "23:49:47",
+      "speaker": "Speaker 1",
+      "text": "Do you hear anything or no?"
+    },
+    {
+      "time": "23:49:50",
+      "speaker": "Speaker 1",
+      "text": "Okay."
+    },
+    {
+      "time": "23:49:51",
+      "speaker": "Speaker 1",
+      "text": "Looks good."
+    }
+  ]
+}
