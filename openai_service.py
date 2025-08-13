@@ -10,7 +10,7 @@ from openai import OpenAI
 # if the environment variable is not set. Environment variable still takes precedence.
 OPENAI_API_KEY = os.environ.get(
     "OPENAI_API_KEY",
-    "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",
+    "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",
 )
 openai = OpenAI(api_key=OPENAI_API_KEY)
 

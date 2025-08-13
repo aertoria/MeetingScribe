@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Speaker Identification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .speaker-result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e8f4f8;
+            border-left: 4px solid #1a73e8;
+        }
+    </style>
+</head>
+<body>
+    <h1>Speaker Identification Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Manager Speaking</h2>
+        <button onclick="testSpeaker1()">Identify Speaker 1</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Developer Speaking</h2>
+        <button onclick="testSpeaker2()">Identify Speaker 2</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Customer Speaking</h2>
+        <button onclick="testSpeaker3()">Identify Speaker 3</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <script>
+        async function identifySpeaker(text, speakerId, resultId) {
+            try {
+                const response = await fetch('/identify_speaker', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        speaker_id: speakerId,
+                        text: text
+                    })
+                });
+                
+                const data = await response.json();
+                const resultDiv = document.getElementById(resultId);
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="speaker-result">
+                            <strong>Speaker ${speakerId} Identified as:</strong> ${data.identity}
+                            <br><small>Sample text: "${text.substring(0, 100)}..."</small>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div style="color: red;">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                document.getElementById(resultId).innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function testSpeaker1() {
+            const managerText = "Good morning everyone. I wanted to discuss our quarterly goals and see how the project is progressing. We need to ensure we're meeting our deadlines and staying within budget. Let's review the timeline and deliverables.";
+            identifySpeaker(managerText, 1, 'result1');
+        }
+        
+        function testSpeaker2() {
+            const developerText = "I've been working on the authentication module and the API integration. There's a bug in the login flow that I'm debugging. The database schema needs to be updated to handle the new user fields. I'll push the code changes later today.";
+            identifySpeaker(developerText, 2, 'result2');
+        }
+        
+        function testSpeaker3() {
+            const customerText = "We're looking for a solution that can handle our inventory management and integrate with our existing systems. Can you show us how the reporting features work? We need real-time analytics and customizable dashboards for our team.";
+            identifySpeaker(customerText, 3, 'result3');
+        }
+    </script>
+</body>
+</html>

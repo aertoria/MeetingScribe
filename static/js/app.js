@@ -1125,7 +1125,578 @@ class MeetingTranscription {
 
 }
 
+// Deepgram Diarization Handler
+class DeepgramDiarization {
+    constructor(meetingApp) {
+        this.meetingApp = meetingApp;
+        this.ws = null;
+        this.mediaRecorder = null;
+        this.audioContext = null;
+        this.audioStream = null;
+        this.processorNode = null;
+        this.isConnected = false;
+        this.transcriptSegments = [];
+        this.speakers = new Map();
+        this.speakerColors = [
+            '#1a73e8', '#34a853', '#ea4335', '#fbbc04',
+            '#673ab7', '#ff6f00', '#00796b', '#5d4037'
+        ];
+        
+        // Speaker identification tracking
+        this.speakerIdentities = new Map();
+        this.speakerBuffer = new Map(); // Buffer recent text for each speaker
+        this.identificationQueue = [];
+        this.isIdentifying = false;
+        this.lastIdentificationTime = new Map();
+        this.identificationInterval = 10000; // Re-identify every 10 seconds
+        
+        // Speaker transition tracking
+        this.currentActiveSpeaker = null;
+        this.lastTranscriptTime = Date.now();
+    }
+    
+    async start() {
+        try {
+            // Get microphone access
+            this.audioStream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
+            
+            // Set up audio context for processing
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                sampleRate: 16000
+            });
+            
+            const source = this.audioContext.createMediaStreamSource(this.audioStream);
+            this.processorNode = this.audioContext.createScriptProcessor(4096, 1, 1);
+            
+            // Connect WebSocket
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/transcribe`;
+            this.ws = new WebSocket(wsUrl);
+            
+            this.ws.onopen = () => {
+                console.log('Connected to Deepgram diarization service');
+                this.isConnected = true;
+                this.meetingApp.updateStatus('Connecting to AI', 'Initializing speaker detection...', 'status-recording');
+            };
+            
+            this.ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                this.handleWebSocketMessage(data);
+            };
+            
+            this.ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                this.meetingApp.showError('WebSocket connection error. Please refresh the page and try again.');
+            };
+            
+            this.ws.onclose = () => {
+                console.log('WebSocket connection closed');
+                this.isConnected = false;
+                this.stop();
+            };
+            
+            // Process audio and send to WebSocket
+            this.processorNode.onaudioprocess = (e) => {
+                if (!this.isConnected || this.ws.readyState !== WebSocket.OPEN) return;
+                
+                const inputData = e.inputBuffer.getChannelData(0);
+                const outputData = new Int16Array(inputData.length);
+                
+                // Convert float32 to int16
+                for (let i = 0; i < inputData.length; i++) {
+                    const s = Math.max(-1, Math.min(1, inputData[i]));
+                    outputData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+                
+                // Send audio data as binary
+                this.ws.send(outputData.buffer);
+            };
+            
+            // Connect audio nodes
+            source.connect(this.processorNode);
+            this.processorNode.connect(this.audioContext.destination);
+            
+            return true;
+        } catch (error) {
+            console.error('Error starting Deepgram diarization:', error);
+            
+            // Provide specific error messages based on error type
+            let errorMessage = 'Failed to start diarization: ';
+            if (error.name === 'NotAllowedError') {
+                errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage = 'No microphone found. Please check your microphone and try again.';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage = 'Your browser does not support audio recording. Please use Chrome, Firefox, or Safari.';
+            } else {
+                errorMessage += error.message;
+            }
+            
+            this.meetingApp.showError(errorMessage);
+            return false;
+        }
+    }
+    
+    handleWebSocketMessage(data) {
+        switch (data.type) {
+            case 'ready':
+                console.log('Diarization service ready');
+                this.meetingApp.updateStatus('Recording Active', 'AI speaker detection ready', 'status-recording');
+                break;
+                
+            case 'transcript':
+                this.handleTranscript(data.data);
+                break;
+                
+            case 'speaker_change':
+                this.handleSpeakerChange(data.data);
+                break;
+                
+            case 'error':
+                console.error('Diarization error:', data.message);
+                this.meetingApp.showError('Diarization error: ' + data.message);
+                this.isConnected = false;
+                // Stop recording if there's an error
+                if (this.meetingApp.isRecording) {
+                    this.meetingApp.stopRecording();
+                }
+                break;
+                
+            case 'summary':
+                console.log('Session summary:', data.data);
+                break;
+        }
+    }
+    
+    handleTranscript(transcriptData) {
+        const { speaker, speaker_id, text, time, confidence } = transcriptData;
+        
+        // Track speaker transitions with improved logic
+        const previousSpeaker = this.currentActiveSpeaker;
+        this.currentActiveSpeaker = speaker_id;
+        
+        // Track speaker with confidence tracking
+        if (!this.speakers.has(speaker_id)) {
+            const color = this.speakerColors[speaker_id % this.speakerColors.length];
+            this.speakers.set(speaker_id, { 
+                name: speaker, 
+                color: color,
+                utteranceCount: 0,
+                lastActiveTime: Date.now(),
+                totalConfidence: confidence || 0.8,
+                avgConfidence: confidence || 0.8,
+                segments: []
+            });
+            
+            // Initialize speaker identity
+            this.speakerIdentities.set(speaker_id, 'Identifying...');
+            this.showSpeakerPanel();
+        }
+        
+        // Update speaker activity with confidence tracking
+        const speakerInfo = this.speakers.get(speaker_id);
+        speakerInfo.utteranceCount++;
+        speakerInfo.lastActiveTime = Date.now();
+        
+        // Update confidence tracking
+        if (confidence) {
+            speakerInfo.totalConfidence += confidence;
+            speakerInfo.avgConfidence = speakerInfo.totalConfidence / speakerInfo.utteranceCount;
+        }
+        
+        // Store segment info for consistency analysis
+        speakerInfo.segments.push({
+            text: text,
+            confidence: confidence || 0.8,
+            timestamp: Date.now(),
+            wordCount: text.split(' ').length
+        });
+        
+        // Keep only last 10 segments per speaker for analysis
+        if (speakerInfo.segments.length > 10) {
+            speakerInfo.segments.shift();
+        }
+        
+        // Buffer speaker text for identification
+        if (!this.speakerBuffer.has(speaker_id)) {
+            this.speakerBuffer.set(speaker_id, []);
+        }
+        this.speakerBuffer.get(speaker_id).push(text);
+        
+        // Keep only last 5 utterances per speaker
+        const buffer = this.speakerBuffer.get(speaker_id);
+        if (buffer.length > 5) {
+            buffer.shift();
+        }
+        
+        // Check if we should identify this speaker (more frequent for low confidence)
+        const lastIdentTime = this.lastIdentificationTime.get(speaker_id) || 0;
+        const now = Date.now();
+        
+        // Identify more frequently for new speakers or low confidence
+        const baseInterval = speakerInfo.utteranceCount < 3 ? 4000 : this.identificationInterval;
+        const confidenceMultiplier = speakerInfo.avgConfidence < 0.7 ? 0.6 : 1.0;
+        const identInterval = baseInterval * confidenceMultiplier;
+        
+        if (now - lastIdentTime > identInterval && buffer.length >= 2) {
+            this.queueSpeakerIdentification(speaker_id);
+        }
+        
+        // Advanced segment merging with confidence consideration
+        const lastSegment = this.transcriptSegments[this.transcriptSegments.length - 1];
+        const wordCount = text.split(' ').length;
+        const timeSinceLastSegment = now - this.lastTranscriptTime;
+        
+        // Improved merging logic
+        const shouldMerge = lastSegment && 
+                           lastSegment.speaker_id === speaker_id && 
+                           (wordCount < 4 || timeSinceLastSegment < 1500) &&
+                           timeSinceLastSegment < 3000 &&
+                           (confidence || 0.8) > 0.6;  // Don't merge low confidence segments
+        
+        if (shouldMerge) {
+            // Merge with previous segment
+            lastSegment.text += ' ' + text;
+            lastSegment.merged = true;
+            lastSegment.confidence = Math.max(lastSegment.confidence || 0.8, confidence || 0.8);
+        } else {
+            // Store as new segment with enhanced metadata
+            this.transcriptSegments.push({
+                speaker: speaker,
+                speaker_id: speaker_id,
+                text: text,
+                time: time,
+                confidence: confidence || 0.8,
+                wordCount: wordCount,
+                transition: previousSpeaker !== null && previousSpeaker !== speaker_id,
+                transitionConfidence: this.calculateTransitionConfidence(previousSpeaker, speaker_id)
+            });
+        }
+        
+        this.lastTranscriptTime = now;
+        
+        // Update display with confidence information
+        this.updateTranscriptDisplay();
+        this.updateSpeakerProfiles(speaker_id, true); // Mark as active
+        
+        // Update full transcript text for the meeting app
+        this.meetingApp.transcript = this.getFullTranscript();
+        
+        // Update stats
+        this.updateStats();
+    }
+    
+    calculateTransitionConfidence(prevSpeaker, currentSpeaker) {
+        if (prevSpeaker === null || prevSpeaker === currentSpeaker) {
+            return 1.0; // No transition or same speaker
+        }
+        
+        // Calculate confidence based on speaker history and patterns
+        const prevSpeakerInfo = this.speakers.get(prevSpeaker);
+        const currentSpeakerInfo = this.speakers.get(currentSpeaker);
+        
+        if (!prevSpeakerInfo || !currentSpeakerInfo) {
+            return 0.5; // Unknown speakers
+        }
+        
+        // Higher confidence for speakers with good track record
+        const avgConfidence = (prevSpeakerInfo.avgConfidence + currentSpeakerInfo.avgConfidence) / 2;
+        
+        // Consider timing patterns - frequent switchers get lower confidence
+        const recentSwitches = this.transcriptSegments.slice(-5).filter(s => s.transition).length;
+        const switchPenalty = Math.max(0, (recentSwitches - 1) * 0.1);
+        
+        return Math.max(0.3, avgConfidence - switchPenalty);
+    }
+    
+    showSpeakerPanel() {
+        const panel = document.getElementById('speakerPanel');
+        const divider = document.getElementById('speakerDivider');
+        if (panel) panel.style.display = 'block';
+        if (divider) divider.style.display = 'block';
+    }
+    
+    queueSpeakerIdentification(speakerId) {
+        // Add to queue if not already there
+        if (!this.identificationQueue.includes(speakerId)) {
+            this.identificationQueue.push(speakerId);
+        }
+        
+        // Process queue if not already processing
+        if (!this.isIdentifying) {
+            this.processIdentificationQueue();
+        }
+    }
+    
+    async processIdentificationQueue() {
+        if (this.identificationQueue.length === 0) {
+            this.isIdentifying = false;
+            return;
+        }
+        
+        this.isIdentifying = true;
+        const speakerId = this.identificationQueue.shift();
+        
+        try {
+            await this.identifySpeaker(speakerId);
+        } catch (error) {
+            console.error('Error identifying speaker:', error);
+        }
+        
+        // Continue processing queue
+        setTimeout(() => this.processIdentificationQueue(), 500);
+    }
+    
+    async identifySpeaker(speakerId) {
+        const buffer = this.speakerBuffer.get(speakerId);
+        if (!buffer || buffer.length === 0) return;
+        
+        // Combine recent utterances
+        const recentText = buffer.slice(-3).join(' ');
+        
+        try {
+            const response = await fetch('/identify_speaker', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    speaker_id: speakerId,
+                    text: recentText
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.speakerIdentities.set(speakerId, data.identity);
+                this.lastIdentificationTime.set(speakerId, Date.now());
+                this.updateSpeakerProfiles(speakerId);
+            }
+        } catch (error) {
+            console.error('Failed to identify speaker:', error);
+        }
+    }
+    
+    updateSpeakerProfiles(activeSpeakerId = null, isSpeaking = false) {
+        const profilesContainer = document.getElementById('speakerProfiles');
+        if (!profilesContainer) return;
+        
+        let html = '';
+        
+        this.speakers.forEach((speaker, speakerId) => {
+            const identity = this.speakerIdentities.get(speakerId) || 'Identifying...';
+            const isActive = speakerId === activeSpeakerId;
+            const color = speaker.color;
+            
+            // Get confidence information
+            const avgConfidence = speaker.avgConfidence || 0.8;
+            const confidencePercent = Math.round(avgConfidence * 100);
+            const confidenceColor = avgConfidence > 0.8 ? '#4caf50' : 
+                                   avgConfidence > 0.6 ? '#ff9800' : '#f44336';
+            
+            html += `
+                <div class="speaker-profile ${isActive && isSpeaking ? 'active' : ''}" 
+                     style="border-left-color: ${color};">
+                    <div class="speaker-avatar" style="background: ${color};">
+                        ${speakerId + 1}
+                    </div>
+                    <div class="speaker-info">
+                        <div class="speaker-label">${speaker.name}</div>
+                        <div class="speaker-identity ${identity === 'Identifying...' ? 'unknown' : ''}">
+                            ${identity}
+                        </div>
+                        <div class="speaker-confidence" style="font-size: 0.75em; color: ${confidenceColor}; margin-top: 2px;">
+                            <span title="Detection confidence">🎯 ${confidencePercent}%</span>
+                            <span style="margin-left: 8px; color: #666;" title="Total segments">${speaker.utteranceCount || 0}</span>
+                        </div>
+                        <div class="speaker-status ${isActive && isSpeaking ? 'speaking' : ''}">
+                            <span class="status-dot"></span>
+                            <span>${isActive && isSpeaking ? 'Speaking' : 'Listening'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        profilesContainer.innerHTML = html;
+        
+        // Update feather icons if needed
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+        
+        // Clear speaking status after a delay
+        if (isSpeaking) {
+            setTimeout(() => {
+                this.updateSpeakerProfiles();
+            }, 2000);
+        }
+    }
+    
+    handleSpeakerChange(data) {
+        console.log(`New speaker detected: ${data.speaker_name}`);
+        // Could show a notification or update UI
+    }
+    
+    updateTranscriptDisplay() {
+        const transcriptElement = this.meetingApp.transcriptElement;
+        let html = '';
+        
+        this.transcriptSegments.forEach((segment, index) => {
+            const speaker = this.speakers.get(segment.speaker_id);
+            const color = speaker ? speaker.color : '#666';
+            
+            // Add visual separator for speaker transitions
+            const transitionClass = segment.transition ? 'speaker-transition' : '';
+            const mergedClass = segment.merged ? 'merged-segment' : '';
+            
+            // Confidence indicators
+            const confidence = segment.confidence || 0.8;
+            const confidenceClass = confidence > 0.8 ? 'high-confidence' : 
+                                  confidence > 0.6 ? 'med-confidence' : 'low-confidence';
+            
+            // Transition confidence indicator
+            const transitionConf = segment.transitionConfidence || 1.0;
+            const transitionWarning = segment.transition && transitionConf < 0.7;
+            
+            html += `
+                <div class="transcript-segment ${transitionClass} ${mergedClass} ${confidenceClass}" 
+                     style="margin-bottom: ${segment.transition ? '12px' : '6px'}; 
+                            padding-top: ${segment.transition ? '8px' : '4px'};
+                            ${confidence < 0.7 ? 'border-left: 2px solid #ff9800;' : ''}">
+                    <div class="segment-header">
+                        <span style="color: ${color}; font-weight: bold;">${segment.speaker}</span>
+                        <span style="color: #999; font-size: 0.85em; margin-left: 10px;">${segment.time}</span>
+                        ${segment.transition ? 
+                          `<span style="color: ${transitionWarning ? '#ff5722' : '#ea4335'}; font-size: 0.75em; margin-left: 8px;">
+                            • ${transitionWarning ? 'uncertain switch' : 'switched'}
+                           </span>` : ''}
+                        ${confidence < 0.7 ? 
+                          `<span style="color: #ff9800; font-size: 0.7em; margin-left: 8px;" title="Low confidence: ${Math.round(confidence * 100)}%">
+                            ⚠ ${Math.round(confidence * 100)}%
+                           </span>` : ''}
+                    </div>
+                    <div class="segment-text" style="margin-top: 4px; line-height: 1.5;">${segment.text}</div>
+                </div>
+            `;
+        });
+        
+        transcriptElement.innerHTML = html || '<p class="text-muted">Waiting for speech...</p>';
+        
+        // Smooth scroll to bottom
+        if (transcriptElement.scrollHeight - transcriptElement.scrollTop < transcriptElement.clientHeight + 100) {
+            transcriptElement.scrollTop = transcriptElement.scrollHeight;
+        }
+    }
+    
+    updateStats() {
+        // Update speaker count
+        if (this.meetingApp.speakerCountText) {
+            this.meetingApp.speakerCountText.textContent = this.speakers.size;
+        }
+        
+        // Update word count
+        if (this.meetingApp.wordCountText) {
+            const wordCount = this.transcriptSegments.reduce((count, segment) => {
+                return count + segment.text.split(/\s+/).length;
+            }, 0);
+            this.meetingApp.wordCountText.textContent = wordCount;
+        }
+    }
+    
+    getFullTranscript() {
+        return this.transcriptSegments
+            .map(segment => `${segment.speaker}: ${segment.text}`)
+            .join('\n');
+    }
+    
+    async stop() {
+        // Send stop command if connected
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ command: 'stop' }));
+            this.ws.close();
+        }
+        
+        // Stop audio processing
+        if (this.processorNode) {
+            this.processorNode.disconnect();
+            this.processorNode = null;
+        }
+        
+        if (this.audioContext) {
+            this.audioContext.close();
+            this.audioContext = null;
+        }
+        
+        if (this.audioStream) {
+            this.audioStream.getTracks().forEach(track => track.stop());
+            this.audioStream = null;
+        }
+        
+        this.isConnected = false;
+        
+        // Hide speaker panel if no speakers detected
+        if (this.speakers.size === 0) {
+            const panel = document.getElementById('speakerPanel');
+            const divider = document.getElementById('speakerDivider');
+            if (panel) panel.style.display = 'none';
+            if (divider) divider.style.display = 'none';
+        }
+    }
+    
+    async getSummary() {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ command: 'get_summary' }));
+        }
+    }
+}
+
 // Initialize the application when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new MeetingTranscription();
+    const app = new MeetingTranscription();
+    
+    // Add toggle for diarization mode
+    const useDiarization = true; // Set to true to use Deepgram diarization
+    
+    if (useDiarization) {
+        // Override recording methods to use Deepgram diarization
+        const diarization = new DeepgramDiarization(app);
+        
+        app.startRecording = async function() {
+            try {
+                this.isRecording = true;
+                this.transcript = '';
+                this.updateRecordingUI(true);
+                this.clearTranscript();
+                
+                const success = await diarization.start();
+                if (!success) {
+                    this.stopRecording();
+                }
+            } catch (error) {
+                this.showError('Failed to start recording: ' + error.message);
+                this.stopRecording();
+            }
+        };
+        
+        app.stopRecording = async function() {
+            this.isRecording = false;
+            this.updateRecordingUI(false);
+            
+            await diarization.stop();
+            
+            if (this.transcript.trim()) {
+                this.generateNotesBtn.disabled = false;
+                this.updateStatus('Processing Complete', 'Ready to generate meeting notes');
+            } else {
+                this.updateStatus('No Speech Detected', 'Please try recording again');
+            }
+        };
+    }
 });

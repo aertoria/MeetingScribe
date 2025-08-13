@@ -43,6 +43,13 @@ from deepgram import (
 # it is ever exposed beyond your local environment.
 HARD_CODED_DEEPGRAM_API_KEY: str = "50ea35eadaddeda4d3779c93b2f2cf27bcd7e14c"
 
+# Additional keys requested by the user. These are not used by this demo
+# script, but are included here per the request to keep changes limited to a
+# single file. Do not use hardcoded secrets in production environments.
+HARD_CODED_GEMINI_API_KEY: str = "AIzaSyAJ_uGXKX_Rg0FO5rdSMPEHdlw-0G76E7g"
+HARD_CODED_OPENAI_API_KEY: str = "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"
+HARD_CODED_SESSION_SECRET: str = "x9FkO5oXLIT7CpXT3CWAsHQhnS7TAXv9nR/CBr1c1Ujx9nXQn4WmaJr73iCikR3Hz3i8kFeXI4Eh1vdEzGSktg=="
+
 
 @dataclass
 class TranscriptEntry:

@@ -12,8 +12,14 @@ from google.genai import types
 # - Sometimes the google genai SDK has occasional type errors. You might need to run to validate, at time.  
 # The SDK was recently renamed from google-generativeai to google-genai. This file reflects the new name and the new APIs.
 
-# This API key is from Gemini Developer API Key, not vertex AI API Key
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+#@ai safe
+# This API key is from Gemini Developer API Key, not Vertex AI API Key.
+# Per user request: use environment variable if present, otherwise fallback to the provided key.
+GEMINI_API_KEY = os.environ.get(
+    "GEMINI_API_KEY",
+    "AIzaSyAJ_uGXKX_Rg0FO5rdSMPEHdlw-0G76E7g",
+)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def chat_with_gemini(message, context=None):
     """

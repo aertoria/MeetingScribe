@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-left: 4px solid #007cba; }
+        .error { border-left-color: #d32f2f; background: #ffebee; }
+        .success { border-left-color: #388e3c; background: #e8f5e8; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Connection Debug</h1>
+    
+    <button onclick="testWebSocket()">Test WebSocket Connection</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+
+    <script>
+        let ws = null;
+        
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logElement = document.createElement('div');
+            logElement.className = `log ${type}`;
+            logElement.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            logsDiv.appendChild(logElement);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        function testWebSocket() {
+            log('Starting WebSocket connection test...', 'info');
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/transcribe`;
+            
+            log(`Connecting to: ${wsUrl}`, 'info');
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    log('WebSocket connection opened successfully!', 'success');
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        log(`Received message: ${JSON.stringify(data)}`, 'success');
+                    } catch (e) {
+                        log(`Received raw message: ${event.data}`, 'info');
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    log(`WebSocket error: ${error}`, 'error');
+                    console.error('WebSocket error details:', error);
+                };
+                
+                ws.onclose = (event) => {
+                    log(`WebSocket closed: Code ${event.code}, Reason: ${event.reason}`, 'error');
+                };
+                
+            } catch (error) {
+                log(`Failed to create WebSocket: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-start test
+        window.addEventListener('load', () => {
+            testWebSocket();
+        });
+    </script>
+</body>
+</html>

@@ -171,6 +171,22 @@
             <!-- Gemini Chat Sidebar -->
             <div class="col-lg-3 d-none d-lg-block chat-sidebar-container">
                 <div class="chat-sidebar">
+                    <!-- Speaker Identification Panel -->
+                    <div class="speaker-identification-panel" id="speakerPanel" style="display: none;">
+                        <div class="speaker-panel-header">
+                            <h6 class="panel-title">
+                                <i data-feather="users" class="me-2"></i>
+                                Speaker Identification
+                            </h6>
+                            <span class="badge bg-success" id="identificationStatus">Live</span>
+                        </div>
+                        <div class="speaker-profiles" id="speakerProfiles">
+                            <!-- Speaker profiles will be dynamically added here -->
+                        </div>
+                    </div>
+                    
+                    <hr class="sidebar-divider" id="speakerDivider" style="display: none;">
+                    
                     <div class="chat-header">
                         <h6 class="chat-title">
                             <i data-feather="message-square" class="me-2"></i>
